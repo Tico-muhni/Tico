@@ -19,7 +19,9 @@ export type GeneratedDraft = {
     captionFacebook: string;
     captionInstagram: string;
     hashtags: string[];
-    overlayText: string;
+    overlayHook: string;
+    overlayCta: string;
+    overlayClosing: string;
   };
   email: {
     subject: string;
@@ -53,13 +55,30 @@ const DRAFT_TOOL_SCHEMA = {
             items: { type: "string" },
             description: "5-8 relevant Hebrew/English hashtags, no # prefix.",
           },
-          overlayText: {
+          overlayHook: {
             type: "string",
             description:
-              "A short punchy Hebrew headline (max ~8 words) that will be rendered as large text on top of a background photo, like a quote card. Must stand alone without the rest of the caption.",
+              "A short Hebrew hook rendered as large text on the post image (max ~6 words) - a question or pain point that grabs attention, e.g. 'רוצים לדעת מה המצב שלכם?'. Must stand alone without the rest of the caption.",
+          },
+          overlayCta: {
+            type: "string",
+            description:
+              "A very short Hebrew call-to-action (max ~3 words) rendered in a large accent color on the image, e.g. 'שלחו הודעה', 'התקשרו עכשיו', 'קבעו פגישה'. Must not promise an outcome (see compliance rules) - it's an invitation to make contact, not a guarantee.",
+          },
+          overlayClosing: {
+            type: "string",
+            description:
+              "A short Hebrew reassurance line under the CTA (max ~4 words), e.g. 'ונבדוק יחד', 'בלי התחייבות', 'ייעוץ ראשוני חינם'.",
           },
         },
-        required: ["captionFacebook", "captionInstagram", "hashtags", "overlayText"],
+        required: [
+          "captionFacebook",
+          "captionInstagram",
+          "hashtags",
+          "overlayHook",
+          "overlayCta",
+          "overlayClosing",
+        ],
       },
       email: {
         type: "object",

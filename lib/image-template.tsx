@@ -85,10 +85,13 @@ const SCRIM = {
 type ZoneLayout = {
   position: CSSProperties;
   justifyContent: string;
-  alignItems?: string;
   background?: string;
-  maxCharsPerLine: number;
-  fontSize: number;
+  paddingTop: number;
+  hookChars: number;
+  ctaChars: number;
+  hookFontSize: number;
+  ctaFontSize: number;
+  closingFontSize: number;
 };
 
 function getZoneLayout(zone: TextZone): ZoneLayout {
@@ -98,22 +101,34 @@ function getZoneLayout(zone: TextZone): ZoneLayout {
         position: { top: 0, left: 0, right: 0 },
         justifyContent: "flex-start",
         background: SCRIM.top,
-        maxCharsPerLine: 22,
-        fontSize: 56,
+        paddingTop: 56,
+        hookChars: 26,
+        ctaChars: 18,
+        hookFontSize: 52,
+        ctaFontSize: 60,
+        closingFontSize: 40,
       };
     case "left":
       return {
         position: { top: 0, left: 0, bottom: 0, width: "46%" },
-        justifyContent: "center",
-        maxCharsPerLine: 15,
-        fontSize: 46,
+        justifyContent: "flex-start",
+        paddingTop: 180,
+        hookChars: 15,
+        ctaChars: 12,
+        hookFontSize: 46,
+        ctaFontSize: 56,
+        closingFontSize: 38,
       };
     case "right":
       return {
         position: { top: 0, right: 0, bottom: 0, width: "46%" },
-        justifyContent: "center",
-        maxCharsPerLine: 15,
-        fontSize: 46,
+        justifyContent: "flex-start",
+        paddingTop: 180,
+        hookChars: 15,
+        ctaChars: 12,
+        hookFontSize: 46,
+        ctaFontSize: 56,
+        closingFontSize: 38,
       };
     case "bottom":
     default:
@@ -121,25 +136,64 @@ function getZoneLayout(zone: TextZone): ZoneLayout {
         position: { left: 0, right: 0, bottom: 0 },
         justifyContent: "flex-end",
         background: SCRIM.bottom,
-        maxCharsPerLine: 22,
-        fontSize: 56,
+        paddingTop: 56,
+        hookChars: 26,
+        ctaChars: 18,
+        hookFontSize: 52,
+        ctaFontSize: 60,
+        closingFontSize: 40,
       };
   }
 }
 
 const TEXT_COLORS = {
-  light: { headline: "#FFFFFF", subtext: "#A8DADC" },
-  dark: { headline: "#1D3557", subtext: "#457B9D" },
+  light: { headline: "#FFFFFF", accent: "#F2A93B" },
+  dark: { headline: "#1D3557", accent: "#E63946" },
 } as const;
+
+function TextBlock({
+  lines,
+  fontSize,
+  color,
+}: {
+  lines: string[];
+  fontSize: number;
+  color: string;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {lines.map((line, i) => (
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            fontSize,
+            fontWeight: 700,
+            color,
+            lineHeight: 1.3,
+            fontFamily: "Noto Sans Hebrew",
+          }}
+        >
+          {line}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export async function renderPostImage({
   backgroundUrl,
-  overlayText,
+  overlayHook,
+  overlayCta,
+  overlayClosing,
   textZone = "bottom",
   textColor = "light",
 }: {
   backgroundUrl: string;
-  overlayText: string;
+  overlayHook: string;
+  overlayCta: string;
+  overlayClosing: string;
   textZone?: TextZone;
   textColor?: TextColor;
 }): Promise<Buffer> {
@@ -148,13 +202,11 @@ export async function renderPostImage({
     fetchAsDataUri(backgroundUrl),
   ]);
 
-  const businessName = process.env.BUSINESS_NAME || "";
   const layout = getZoneLayout(textZone);
   const colors = TEXT_COLORS[textColor];
-  const headlineLines = wrapAndReverseRTL(overlayText, layout.maxCharsPerLine);
-  const businessLines = businessName
-    ? wrapAndReverseRTL(businessName, Math.max(layout.maxCharsPerLine, 30))
-    : [];
+  const hookLines = wrapAndReverseRTL(overlayHook, layout.hookChars);
+  const ctaLines = wrapAndReverseRTL(overlayCta, layout.ctaChars);
+  const closingLines = wrapAndReverseRTL(overlayClosing, layout.hookChars);
 
   const image = new ImageResponse(
     (
@@ -180,48 +232,22 @@ export async function renderPostImage({
             display: "flex",
             flexDirection: "column",
             justifyContent: layout.justifyContent,
-            padding: "56px 48px",
+            padding: `${layout.paddingTop}px 48px 56px`,
             ...(layout.background ? { background: layout.background } : {}),
             ...layout.position,
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {headlineLines.map((line, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  fontSize: layout.fontSize,
-                  fontWeight: 700,
-                  color: colors.headline,
-                  lineHeight: 1.35,
-                  fontFamily: "Noto Sans Hebrew",
-                }}
-              >
-                {line}
-              </div>
-            ))}
+          <TextBlock lines={hookLines} fontSize={layout.hookFontSize} color={colors.headline} />
+          <div style={{ display: "flex", marginTop: 64 }}>
+            <TextBlock lines={ctaLines} fontSize={layout.ctaFontSize} color={colors.accent} />
           </div>
-          {businessLines.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", marginTop: 24 }}>
-              {businessLines.map((line, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    fontSize: 28,
-                    fontWeight: 400,
-                    color: colors.subtext,
-                    fontFamily: "Noto Sans Hebrew",
-                  }}
-                >
-                  {line}
-                </div>
-              ))}
-            </div>
-          )}
+          <div style={{ display: "flex", marginTop: 32 }}>
+            <TextBlock
+              lines={closingLines}
+              fontSize={layout.closingFontSize}
+              color={colors.headline}
+            />
+          </div>
         </div>
       </div>
     ),

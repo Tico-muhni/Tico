@@ -21,14 +21,18 @@ async function pickRandomActiveTemplate() {
   return active[Math.floor(Math.random() * active.length)];
 }
 
-async function tryAutoRenderImage(overlayText: string) {
+async function tryAutoRenderImage(overlay: {
+  overlayHook: string;
+  overlayCta: string;
+  overlayClosing: string;
+}) {
   const template = await pickRandomActiveTemplate();
   if (!template) return null;
 
   try {
     const buffer = await renderPostImage({
       backgroundUrl: template.imageUrl,
-      overlayText,
+      ...overlay,
       textZone: template.textZone,
       textColor: template.textColor,
     });
@@ -79,7 +83,11 @@ export async function runContentGeneration(count?: number) {
     for (const topic of picked) {
       const draft = await generateDraftForTopic(topic.title);
       const model = getContentModel();
-      const autoImageUrl = await tryAutoRenderImage(draft.post.overlayText);
+      const autoImageUrl = await tryAutoRenderImage({
+        overlayHook: draft.post.overlayHook,
+        overlayCta: draft.post.overlayCta,
+        overlayClosing: draft.post.overlayClosing,
+      });
 
       await db.insert(draftPosts).values({
         topicId: topic.id,
@@ -87,7 +95,9 @@ export async function runContentGeneration(count?: number) {
         aiCaptionFacebook: draft.post.captionFacebook,
         aiCaptionInstagram: draft.post.captionInstagram,
         hashtags: draft.post.hashtags,
-        overlayText: draft.post.overlayText,
+        overlayHook: draft.post.overlayHook,
+        overlayCta: draft.post.overlayCta,
+        overlayClosing: draft.post.overlayClosing,
         imageUrl: autoImageUrl,
         imageSource: autoImageUrl ? "auto_template" : null,
         aiModel: model,
