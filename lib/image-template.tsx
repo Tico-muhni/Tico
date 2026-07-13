@@ -227,6 +227,15 @@ export async function renderPostImage({
   const ctaLines = wrapAndReverseRTL(overlayCta, layout.ctaChars);
   const closingLines = wrapAndReverseRTL(overlayClosing, layout.hookChars);
 
+  // The gaps were calibrated against a 3-line hook. If the AI-generated
+  // hook (or closing) wraps to more lines than that, shrink the gaps so a
+  // longer post still balances out over the available vertical space
+  // instead of pushing the CTA/closing further down every time.
+  const REFERENCE_HOOK_LINES = 3;
+  const extraLines = Math.max(0, hookLines.length - REFERENCE_HOOK_LINES);
+  const ctaGap = Math.max(layout.ctaGap - extraLines * 45, 90);
+  const closingGap = Math.max(layout.closingGap - extraLines * 45, 80);
+
   const image = new ImageResponse(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", position: "relative" }}>
@@ -257,10 +266,10 @@ export async function renderPostImage({
           }}
         >
           <TextBlock lines={hookLines} fontSize={layout.hookFontSize} color={colors.headline} />
-          <div style={{ display: "flex", marginTop: layout.ctaGap }}>
+          <div style={{ display: "flex", marginTop: ctaGap }}>
             <TextBlock lines={ctaLines} fontSize={layout.ctaFontSize} color={colors.accent} />
           </div>
-          <div style={{ display: "flex", marginTop: layout.closingGap }}>
+          <div style={{ display: "flex", marginTop: closingGap }}>
             <TextBlock
               lines={closingLines}
               fontSize={layout.closingFontSize}

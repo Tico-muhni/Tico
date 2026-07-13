@@ -58,7 +58,7 @@ const DRAFT_TOOL_SCHEMA = {
           overlayHook: {
             type: "string",
             description:
-              "A short Hebrew hook rendered as large text on the post image (max ~6 words) - a question or pain point that grabs attention, e.g. 'רוצים לדעת מה המצב שלכם?'. Must stand alone without the rest of the caption.",
+              "A short Hebrew hook rendered as large text on the post image, in large type over a narrow column - it will wrap to about 3 short lines, so keep it to 4-5 words MAX (shorter is better). A question or pain point that grabs attention, e.g. 'רוצים לדעת מה המצב שלכם?' (5 words). Must stand alone without the rest of the caption.",
           },
           overlayCta: {
             type: "string",
