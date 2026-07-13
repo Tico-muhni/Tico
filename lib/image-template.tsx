@@ -20,12 +20,12 @@ let fontsCache: LoadedFont[] | null = null;
 async function loadFonts(): Promise<LoadedFont[]> {
   if (fontsCache) return fontsCache;
   const [regular, bold] = await Promise.all([
-    readFile(join(process.cwd(), "assets/fonts/NotoSansHebrew-Regular.ttf")),
-    readFile(join(process.cwd(), "assets/fonts/NotoSansHebrew-Bold.ttf")),
+    readFile(join(process.cwd(), "assets/fonts/Heebo-Regular.ttf")),
+    readFile(join(process.cwd(), "assets/fonts/Heebo-Bold.ttf")),
   ]);
   fontsCache = [
-    { name: "Noto Sans Hebrew", data: regular, weight: 400, style: "normal" },
-    { name: "Noto Sans Hebrew", data: bold, weight: 700, style: "normal" },
+    { name: "Heebo", data: regular, weight: 400, style: "normal" },
+    { name: "Heebo", data: bold, weight: 700, style: "normal" },
   ];
   return fontsCache;
 }
@@ -190,7 +190,7 @@ function TextBlock({
             fontWeight: 700,
             color,
             lineHeight: 1.3,
-            fontFamily: "Noto Sans Hebrew",
+            fontFamily: "Heebo",
             whiteSpace: "nowrap",
           }}
         >
