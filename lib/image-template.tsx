@@ -391,8 +391,18 @@ export async function renderContentSlide({
           }}
         >
           {logoDataUri ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoDataUri} alt="" height={54} style={{ marginBottom: 14 }} />
+            <div
+              style={{
+                display: "flex",
+                background: "#FFFFFF",
+                borderRadius: 14,
+                padding: "16px 28px",
+                marginBottom: 14,
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={logoDataUri} alt="" height={44} />
+            </div>
           ) : (
             <div style={{ display: "flex", alignItems: "baseline", marginBottom: 10 }}>
               <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#FFFFFF", fontFamily: "Heebo" }}>
