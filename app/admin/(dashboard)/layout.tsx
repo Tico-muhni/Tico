@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { href: "/admin/drafts", label: "טיוטות לאישור" },
   { href: "/admin/subscribers", label: "רשימת תפוצה" },
   { href: "/admin/topics", label: "נושאים" },
+  { href: "/admin/templates", label: "תבניות תמונה" },
   { href: "/admin/history", label: "היסטוריה" },
 ];
 

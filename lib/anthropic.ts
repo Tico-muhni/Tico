@@ -19,6 +19,7 @@ export type GeneratedDraft = {
     captionFacebook: string;
     captionInstagram: string;
     hashtags: string[];
+    overlayText: string;
   };
   email: {
     subject: string;
@@ -52,8 +53,13 @@ const DRAFT_TOOL_SCHEMA = {
             items: { type: "string" },
             description: "5-8 relevant Hebrew/English hashtags, no # prefix.",
           },
+          overlayText: {
+            type: "string",
+            description:
+              "A short punchy Hebrew headline (max ~8 words) that will be rendered as large text on top of a background photo, like a quote card. Must stand alone without the rest of the caption.",
+          },
         },
-        required: ["captionFacebook", "captionInstagram", "hashtags"],
+        required: ["captionFacebook", "captionInstagram", "hashtags", "overlayText"],
       },
       email: {
         type: "object",

@@ -17,6 +17,7 @@ type PostDraft = {
   finalCaptionInstagram: string | null;
   hashtags: string[];
   imageUrl: string | null;
+  imageSource: string | null;
   topicTitle: string | null;
   disclaimerConfirmed: boolean;
   noGuaranteeConfirmed: boolean;
@@ -81,17 +82,26 @@ export default function PostDraftCard({ draft }: { draft: PostDraft }) {
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         {draft.imageUrl && (
-          <Image
-            src={draft.imageUrl}
-            alt=""
-            width={96}
-            height={96}
-            unoptimized
-            className="h-24 w-24 rounded-lg object-cover"
-          />
+          <div className="flex flex-col items-center gap-1">
+            <Image
+              src={draft.imageUrl}
+              alt=""
+              width={96}
+              height={96}
+              unoptimized
+              className="h-24 w-24 rounded-lg object-cover"
+            />
+            <span className="text-xs text-foreground/50">
+              {draft.imageSource === "auto_template" ? "נוצרה אוטומטית" : "הועלתה ידנית"}
+            </span>
+          </div>
         )}
         <label className="flex flex-col gap-1 text-sm">
-          {needsInstagramImage ? "תמונה (חובה לאינסטגרם)" : "תמונה (אופציונלי)"}
+          {draft.imageUrl
+            ? "החלפת תמונה"
+            : needsInstagramImage
+              ? "תמונה (חובה לאינסטגרם)"
+              : "תמונה (אופציונלי)"}
           <input type="file" name="image" accept="image/*" className="text-sm" />
         </label>
       </div>

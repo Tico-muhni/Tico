@@ -15,6 +15,7 @@ export default async function DraftsPage() {
       finalCaptionInstagram: draftPosts.finalCaptionInstagram,
       hashtags: draftPosts.hashtags,
       imageUrl: draftPosts.imageUrl,
+      imageSource: draftPosts.imageSource,
       disclaimerConfirmed: draftPosts.disclaimerConfirmed,
       noGuaranteeConfirmed: draftPosts.noGuaranteeConfirmed,
       topicTitle: topics.title,

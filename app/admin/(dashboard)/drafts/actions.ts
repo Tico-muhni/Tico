@@ -40,7 +40,7 @@ async function applyPostEdits(id: string, formData: FormData) {
       hashtags,
       disclaimerConfirmed,
       noGuaranteeConfirmed,
-      ...(imageUrl ? { imageUrl } : {}),
+      ...(imageUrl ? { imageUrl, imageSource: "manual_upload" } : {}),
     })
     .where(eq(draftPosts.id, id));
 }

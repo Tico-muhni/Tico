@@ -79,7 +79,9 @@ export const draftPosts = pgTable("draft_posts", {
   finalCaptionFacebook: text("final_caption_facebook"),
   finalCaptionInstagram: text("final_caption_instagram"),
   hashtags: text("hashtags").array().notNull().default([]),
+  overlayText: text("overlay_text"),
   imageUrl: text("image_url"),
+  imageSource: text("image_source"),
   status: reviewStatusEnum("status").notNull().default("pending_review"),
   aiModel: text("ai_model"),
   generatedAt: timestamp("generated_at", { withTimezone: true })
@@ -162,4 +164,14 @@ export const generationRuns = pgTable("generation_runs", {
   emailsGenerated: integer("emails_generated").notNull().default(0),
   status: generationRunStatusEnum("status").notNull().default("running"),
   error: text("error"),
+});
+
+export const imageTemplates = pgTable("image_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  label: text("label").notNull(),
+  imageUrl: text("image_url").notNull(),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });

@@ -1,8 +1,45 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { topics, draftPosts, draftEmails, generationRuns } from "@/drizzle/schema";
+import {
+  topics,
+  draftPosts,
+  draftEmails,
+  generationRuns,
+  imageTemplates,
+} from "@/drizzle/schema";
 import { generateDraftForTopic, getContentModel } from "@/lib/anthropic";
 import { SEED_TOPICS } from "@/lib/seed-topics";
+import { renderPostImage } from "@/lib/image-template";
+import { uploadGeneratedImage } from "@/lib/blob";
+
+async function pickRandomActiveTemplate() {
+  const active = await db
+    .select()
+    .from(imageTemplates)
+    .where(eq(imageTemplates.active, true));
+  if (active.length === 0) return null;
+  return active[Math.floor(Math.random() * active.length)];
+}
+
+async function tryAutoRenderImage(overlayText: string) {
+  const template = await pickRandomActiveTemplate();
+  if (!template) return null;
+
+  try {
+    const buffer = await renderPostImage({
+      backgroundUrl: template.imageUrl,
+      overlayText,
+    });
+    const url = await uploadGeneratedImage(buffer);
+    return url;
+  } catch (err) {
+    // A rendering/upload failure shouldn't block the whole draft - it just
+    // falls back to the existing "upload an image manually" flow in the
+    // approval dashboard.
+    console.error("Auto image render failed:", err);
+    return null;
+  }
+}
 
 async function ensureSeedTopics() {
   const existing = await db.select({ title: topics.title }).from(topics);
@@ -40,6 +77,7 @@ export async function runContentGeneration(count?: number) {
     for (const topic of picked) {
       const draft = await generateDraftForTopic(topic.title);
       const model = getContentModel();
+      const autoImageUrl = await tryAutoRenderImage(draft.post.overlayText);
 
       await db.insert(draftPosts).values({
         topicId: topic.id,
@@ -47,6 +85,9 @@ export async function runContentGeneration(count?: number) {
         aiCaptionFacebook: draft.post.captionFacebook,
         aiCaptionInstagram: draft.post.captionInstagram,
         hashtags: draft.post.hashtags,
+        overlayText: draft.post.overlayText,
+        imageUrl: autoImageUrl,
+        imageSource: autoImageUrl ? "auto_template" : null,
         aiModel: model,
       });
       postsGenerated += 1;
