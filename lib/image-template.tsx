@@ -87,13 +87,19 @@ type ZoneLayout = {
   justifyContent: string;
   background?: string;
   paddingTop: number;
+  paddingX: number;
   hookChars: number;
   ctaChars: number;
   hookFontSize: number;
   ctaFontSize: number;
   closingFontSize: number;
+  ctaGap: number;
+  closingGap: number;
 };
 
+// left/right values are calibrated pixel-for-pixel against a real reference
+// design (measured font heights/widths and block gaps via sharp), not
+// eyeballed - see conversation history for the measurement approach.
 function getZoneLayout(zone: TextZone): ZoneLayout {
   switch (zone) {
     case "top":
@@ -101,34 +107,43 @@ function getZoneLayout(zone: TextZone): ZoneLayout {
         position: { top: 0, left: 0, right: 0 },
         justifyContent: "flex-start",
         background: SCRIM.top,
-        paddingTop: 56,
-        hookChars: 26,
-        ctaChars: 18,
-        hookFontSize: 52,
-        ctaFontSize: 60,
-        closingFontSize: 40,
+        paddingTop: 64,
+        paddingX: 48,
+        hookChars: 24,
+        ctaChars: 16,
+        hookFontSize: 58,
+        ctaFontSize: 72,
+        closingFontSize: 48,
+        ctaGap: 100,
+        closingGap: 90,
       };
     case "left":
       return {
-        position: { top: 0, left: 0, bottom: 0, width: "46%" },
+        position: { top: 0, left: 0, bottom: 0, width: "48%" },
         justifyContent: "flex-start",
-        paddingTop: 180,
-        hookChars: 15,
+        paddingTop: 170,
+        paddingX: 36,
+        hookChars: 11,
         ctaChars: 12,
-        hookFontSize: 46,
-        ctaFontSize: 56,
-        closingFontSize: 38,
+        hookFontSize: 72,
+        ctaFontSize: 88,
+        closingFontSize: 60,
+        ctaGap: 195,
+        closingGap: 190,
       };
     case "right":
       return {
-        position: { top: 0, right: 0, bottom: 0, width: "46%" },
+        position: { top: 0, right: 0, bottom: 0, width: "48%" },
         justifyContent: "flex-start",
-        paddingTop: 180,
-        hookChars: 15,
+        paddingTop: 170,
+        paddingX: 36,
+        hookChars: 11,
         ctaChars: 12,
-        hookFontSize: 46,
-        ctaFontSize: 56,
-        closingFontSize: 38,
+        hookFontSize: 72,
+        ctaFontSize: 88,
+        closingFontSize: 60,
+        ctaGap: 195,
+        closingGap: 190,
       };
     case "bottom":
     default:
@@ -136,18 +151,21 @@ function getZoneLayout(zone: TextZone): ZoneLayout {
         position: { left: 0, right: 0, bottom: 0 },
         justifyContent: "flex-end",
         background: SCRIM.bottom,
-        paddingTop: 56,
-        hookChars: 26,
-        ctaChars: 18,
-        hookFontSize: 52,
-        ctaFontSize: 60,
-        closingFontSize: 40,
+        paddingTop: 64,
+        paddingX: 48,
+        hookChars: 24,
+        ctaChars: 16,
+        hookFontSize: 58,
+        ctaFontSize: 72,
+        closingFontSize: 48,
+        ctaGap: 100,
+        closingGap: 90,
       };
   }
 }
 
 const TEXT_COLORS = {
-  light: { headline: "#FFFFFF", accent: "#F2A93B" },
+  light: { headline: "#FFFFFF", accent: "#F5AC32" },
   dark: { headline: "#1D3557", accent: "#E63946" },
 } as const;
 
@@ -173,6 +191,7 @@ function TextBlock({
             color,
             lineHeight: 1.3,
             fontFamily: "Noto Sans Hebrew",
+            whiteSpace: "nowrap",
           }}
         >
           {line}
@@ -232,16 +251,16 @@ export async function renderPostImage({
             display: "flex",
             flexDirection: "column",
             justifyContent: layout.justifyContent,
-            padding: `${layout.paddingTop}px 48px 56px`,
+            padding: `${layout.paddingTop}px ${layout.paddingX}px 56px`,
             ...(layout.background ? { background: layout.background } : {}),
             ...layout.position,
           }}
         >
           <TextBlock lines={hookLines} fontSize={layout.hookFontSize} color={colors.headline} />
-          <div style={{ display: "flex", marginTop: 64 }}>
+          <div style={{ display: "flex", marginTop: layout.ctaGap }}>
             <TextBlock lines={ctaLines} fontSize={layout.ctaFontSize} color={colors.accent} />
           </div>
-          <div style={{ display: "flex", marginTop: 32 }}>
+          <div style={{ display: "flex", marginTop: layout.closingGap }}>
             <TextBlock
               lines={closingLines}
               fontSize={layout.closingFontSize}
