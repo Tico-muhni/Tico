@@ -293,21 +293,28 @@ export async function renderContentSlide({
   totalSlides,
   title,
   body,
-  businessName,
+  logoUrl,
 }: {
+  /** 1-based index of this tip/point, independent of its position in the
+   *  overall carousel (a 4-tip carousel numbers its content slides 1-4
+   *  even though slide 1 of the carousel is the cover). */
   slideNumber: number;
   totalSlides: number;
   title: string;
   body: string;
-  businessName?: string;
+  /** Optional real logo image (transparent PNG recommended). Falls back
+   *  to a text wordmark styled after the brand's navy/green look. */
+  logoUrl?: string;
 }): Promise<Buffer> {
-  const fonts = await loadFonts();
+  const [fonts, logoDataUri] = await Promise.all([
+    loadFonts(),
+    logoUrl ? fetchAsDataUri(logoUrl) : Promise.resolve(null),
+  ]);
 
   const titleLines = wrapAndReverseRTL(title, 14);
   const bodyLines = wrapAndReverseRTL(body, 26);
   // Purely numeric/Latin, no RTL reordering needed (or wanted).
   const progressText = `${slideNumber} / ${totalSlides}`;
-  const businessLines = businessName ? wrapAndReverseRTL(businessName, 30) : [];
 
   const image = new ImageResponse(
     (
@@ -320,7 +327,7 @@ export async function renderContentSlide({
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
-          background: "linear-gradient(160deg, #1D3557 0%, #14243E 100%)",
+          background: "linear-gradient(160deg, #338C5B 0%, #245F3F 100%)",
           padding: "120px 90px",
         }}
       >
@@ -363,7 +370,7 @@ export async function renderContentSlide({
                 display: "flex",
                 fontSize: 38,
                 fontWeight: 400,
-                color: "#A8DADC",
+                color: "#E9F5EE",
                 lineHeight: 1.5,
                 fontFamily: "Heebo",
                 whiteSpace: "nowrap",
@@ -383,21 +390,29 @@ export async function renderContentSlide({
             alignItems: "center",
           }}
         >
-          {businessLines.length > 0 && (
-            <div
-              style={{
-                display: "flex",
-                fontSize: 26,
-                fontWeight: 400,
-                color: "#457B9D",
-                fontFamily: "Heebo",
-                marginBottom: 10,
-              }}
-            >
-              {businessLines[0]}
+          {logoDataUri ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoDataUri} alt="" height={54} style={{ marginBottom: 14 }} />
+          ) : (
+            <div style={{ display: "flex", alignItems: "baseline", marginBottom: 10 }}>
+              <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#FFFFFF", fontFamily: "Heebo" }}>
+                TICO
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 30,
+                  fontWeight: 700,
+                  color: "#F5AC32",
+                  fontFamily: "Heebo",
+                  marginLeft: 8,
+                }}
+              >
+                FINANCE
+              </div>
             </div>
           )}
-          <div style={{ display: "flex", fontSize: 24, fontWeight: 400, color: "#457B9D", fontFamily: "Heebo" }}>
+          <div style={{ display: "flex", fontSize: 22, fontWeight: 400, color: "#CFEBDC", fontFamily: "Heebo" }}>
             {progressText}
           </div>
         </div>
