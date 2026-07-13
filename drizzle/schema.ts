@@ -58,6 +58,18 @@ export const generationRunStatusEnum = pgEnum("generation_run_status", [
   "failed",
 ]);
 
+export const templateTextZoneEnum = pgEnum("template_text_zone", [
+  "bottom",
+  "top",
+  "left",
+  "right",
+]);
+
+export const templateTextColorEnum = pgEnum("template_text_color", [
+  "light",
+  "dark",
+]);
+
 export const topics = pgTable("topics", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
@@ -170,6 +182,8 @@ export const imageTemplates = pgTable("image_templates", {
   id: uuid("id").primaryKey().defaultRandom(),
   label: text("label").notNull(),
   imageUrl: text("image_url").notNull(),
+  textZone: templateTextZoneEnum("text_zone").notNull().default("bottom"),
+  textColor: templateTextColorEnum("text_color").notNull().default("light"),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

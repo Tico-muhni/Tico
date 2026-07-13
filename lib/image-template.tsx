@@ -1,8 +1,13 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { CSSProperties } from "react";
 
-const SIZE = 1080;
+const WIDTH = 1080;
+const HEIGHT = 1350;
+
+export type TextZone = "bottom" | "top" | "left" | "right";
+export type TextColor = "light" | "dark";
 
 type LoadedFont = {
   name: string;
@@ -49,7 +54,7 @@ function reverseWordVisual(word: string): string {
   return HEBREW_RE.test(word) ? [...word].reverse().join("") : word;
 }
 
-function wrapAndReverseRTL(text: string, maxCharsPerLine = 22): string[] {
+function wrapAndReverseRTL(text: string, maxCharsPerLine: number): string[] {
   const words = text.trim().split(/\s+/).filter(Boolean);
   const lines: string[][] = [];
   let current: string[] = [];
@@ -72,12 +77,71 @@ function wrapAndReverseRTL(text: string, maxCharsPerLine = 22): string[] {
   );
 }
 
+const SCRIM = {
+  bottom: "linear-gradient(to top, rgba(29,53,87,0.94) 0%, rgba(29,53,87,0.6) 45%, rgba(29,53,87,0) 78%)",
+  top: "linear-gradient(to bottom, rgba(29,53,87,0.94) 0%, rgba(29,53,87,0.6) 45%, rgba(29,53,87,0) 78%)",
+} as const;
+
+type ZoneLayout = {
+  position: CSSProperties;
+  justifyContent: string;
+  alignItems?: string;
+  background?: string;
+  maxCharsPerLine: number;
+  fontSize: number;
+};
+
+function getZoneLayout(zone: TextZone): ZoneLayout {
+  switch (zone) {
+    case "top":
+      return {
+        position: { top: 0, left: 0, right: 0 },
+        justifyContent: "flex-start",
+        background: SCRIM.top,
+        maxCharsPerLine: 22,
+        fontSize: 56,
+      };
+    case "left":
+      return {
+        position: { top: 0, left: 0, bottom: 0, width: "46%" },
+        justifyContent: "center",
+        maxCharsPerLine: 15,
+        fontSize: 46,
+      };
+    case "right":
+      return {
+        position: { top: 0, right: 0, bottom: 0, width: "46%" },
+        justifyContent: "center",
+        maxCharsPerLine: 15,
+        fontSize: 46,
+      };
+    case "bottom":
+    default:
+      return {
+        position: { left: 0, right: 0, bottom: 0 },
+        justifyContent: "flex-end",
+        background: SCRIM.bottom,
+        maxCharsPerLine: 22,
+        fontSize: 56,
+      };
+  }
+}
+
+const TEXT_COLORS = {
+  light: { headline: "#FFFFFF", subtext: "#A8DADC" },
+  dark: { headline: "#1D3557", subtext: "#457B9D" },
+} as const;
+
 export async function renderPostImage({
   backgroundUrl,
   overlayText,
+  textZone = "bottom",
+  textColor = "light",
 }: {
   backgroundUrl: string;
   overlayText: string;
+  textZone?: TextZone;
+  textColor?: TextColor;
 }): Promise<Buffer> {
   const [fonts, backgroundDataUri] = await Promise.all([
     loadFonts(),
@@ -85,8 +149,12 @@ export async function renderPostImage({
   ]);
 
   const businessName = process.env.BUSINESS_NAME || "";
-  const headlineLines = wrapAndReverseRTL(overlayText);
-  const businessLines = businessName ? wrapAndReverseRTL(businessName, 40) : [];
+  const layout = getZoneLayout(textZone);
+  const colors = TEXT_COLORS[textColor];
+  const headlineLines = wrapAndReverseRTL(overlayText, layout.maxCharsPerLine);
+  const businessLines = businessName
+    ? wrapAndReverseRTL(businessName, Math.max(layout.maxCharsPerLine, 30))
+    : [];
 
   const image = new ImageResponse(
     (
@@ -95,30 +163,26 @@ export async function renderPostImage({
         <img
           src={backgroundDataUri}
           alt=""
-          width={SIZE}
-          height={SIZE}
+          width={WIDTH}
+          height={HEIGHT}
           style={{
             position: "absolute",
             top: 0,
             left: 0,
-            width: `${SIZE}px`,
-            height: `${SIZE}px`,
+            width: `${WIDTH}px`,
+            height: `${HEIGHT}px`,
             objectFit: "cover",
           }}
         />
         <div
           style={{
             position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
             display: "flex",
             flexDirection: "column",
-            justifyContent: "flex-end",
-            background:
-              "linear-gradient(to top, rgba(29,53,87,0.94) 0%, rgba(29,53,87,0.6) 45%, rgba(29,53,87,0) 78%)",
-            padding: "64px",
+            justifyContent: layout.justifyContent,
+            padding: "56px 48px",
+            ...(layout.background ? { background: layout.background } : {}),
+            ...layout.position,
           }}
         >
           <div style={{ display: "flex", flexDirection: "column" }}>
@@ -128,9 +192,9 @@ export async function renderPostImage({
                 style={{
                   display: "flex",
                   justifyContent: "flex-end",
-                  fontSize: 56,
+                  fontSize: layout.fontSize,
                   fontWeight: 700,
-                  color: "white",
+                  color: colors.headline,
                   lineHeight: 1.35,
                   fontFamily: "Noto Sans Hebrew",
                 }}
@@ -149,7 +213,7 @@ export async function renderPostImage({
                     justifyContent: "flex-end",
                     fontSize: 28,
                     fontWeight: 400,
-                    color: "#A8DADC",
+                    color: colors.subtext,
                     fontFamily: "Noto Sans Hebrew",
                   }}
                 >
@@ -161,7 +225,7 @@ export async function renderPostImage({
         </div>
       </div>
     ),
-    { width: SIZE, height: SIZE, fonts }
+    { width: WIDTH, height: HEIGHT, fonts }
   );
 
   return Buffer.from(await image.arrayBuffer());

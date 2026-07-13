@@ -29,6 +29,8 @@ async function tryAutoRenderImage(overlayText: string) {
     const buffer = await renderPostImage({
       backgroundUrl: template.imageUrl,
       overlayText,
+      textZone: template.textZone,
+      textColor: template.textColor,
     });
     const url = await uploadGeneratedImage(buffer);
     return url;

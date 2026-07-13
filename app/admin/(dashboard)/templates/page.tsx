@@ -8,6 +8,13 @@ import {
   toggleTemplateActiveAction,
 } from "./actions";
 
+const ZONE_LABEL: Record<string, string> = {
+  bottom: "טקסט למטה",
+  top: "טקסט למעלה",
+  left: "טקסט בצד שמאל",
+  right: "טקסט בצד ימין",
+};
+
 export default async function TemplatesPage() {
   const all = await db
     .select()
@@ -49,6 +56,9 @@ export default async function TemplatesPage() {
               <span className={t.active ? "text-emerald-700" : "text-foreground/50"}>
                 {t.active ? "פעילה" : "כבויה"}
               </span>
+            </div>
+            <div className="mt-1 text-xs text-foreground/50">
+              {ZONE_LABEL[t.textZone]} · {t.textColor === "light" ? "טקסט בהיר" : "טקסט כהה"}
             </div>
             <div className="mt-3 flex gap-2">
               {t.active ? (
