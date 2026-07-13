@@ -219,6 +219,7 @@ export async function renderPostImage({
   overlayClosing,
   textZone = "bottom",
   textColor = "light",
+  flatBackground = false,
 }: {
   backgroundUrl: string;
   overlayHook: string;
@@ -226,6 +227,10 @@ export async function renderPostImage({
   overlayClosing: string;
   textZone?: TextZone;
   textColor?: TextColor;
+  /** Skip the photo-legibility scrim gradient - use for solid-color
+   *  backgrounds (no photo) so the brand color reads as a flat card
+   *  instead of blending into the scrim's navy tint. */
+  flatBackground?: boolean;
 }): Promise<Buffer> {
   const [fonts, backgroundDataUri] = await Promise.all([
     loadFonts(),
@@ -233,6 +238,7 @@ export async function renderPostImage({
   ]);
 
   const layout = getZoneLayout(textZone);
+  if (flatBackground) layout.background = undefined;
   const colors = TEXT_COLORS[textColor];
   const hookLines = wrapAndReverseRTL(overlayHook, layout.hookChars);
   const ctaLines = wrapAndReverseRTL(overlayCta, layout.ctaChars);
