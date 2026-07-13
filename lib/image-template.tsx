@@ -54,7 +54,7 @@ function reverseWordVisual(word: string): string {
   return HEBREW_RE.test(word) ? [...word].reverse().join("") : word;
 }
 
-function wrapAndReverseRTL(text: string, maxCharsPerLine: number): string[] {
+function wrapRTLWords(text: string, maxCharsPerLine: number): string[][] {
   const words = text.trim().split(/\s+/).filter(Boolean);
   const lines: string[][] = [];
   let current: string[] = [];
@@ -72,8 +72,30 @@ function wrapAndReverseRTL(text: string, maxCharsPerLine: number): string[] {
   }
   if (current.length > 0) lines.push(current);
 
-  return lines.map((line) =>
-    line.slice().reverse().map(reverseWordVisual).join(" ")
+  return lines.map((line) => line.slice().reverse());
+}
+
+function wrapAndReverseRTL(text: string, maxCharsPerLine: number): string[] {
+  return wrapRTLWords(text, maxCharsPerLine).map((line) =>
+    line.map(reverseWordVisual).join(" ")
+  );
+}
+
+const PUNCT_RE = /["'"׳״.,!?]/g;
+
+/** Same wrapping as wrapAndReverseRTL, but keeps each word separate (with a
+ *  highlight flag) so the caller can render individual words in a
+ *  different color - e.g. one emphasized word inside a quote. */
+function wrapRTLWithHighlight(
+  text: string,
+  maxCharsPerLine: number,
+  highlightWords: Set<string>
+): { text: string; highlight: boolean }[][] {
+  return wrapRTLWords(text, maxCharsPerLine).map((line) =>
+    line.map((word) => ({
+      text: reverseWordVisual(word),
+      highlight: highlightWords.has(word.replace(PUNCT_RE, "")),
+    }))
   );
 }
 
@@ -425,6 +447,127 @@ export async function renderContentSlide({
           <div style={{ display: "flex", fontSize: 22, fontWeight: 400, color: "#CFEBDC", fontFamily: "Heebo" }}>
             {progressText}
           </div>
+        </div>
+      </div>
+    ),
+    { width: WIDTH, height: HEIGHT, fonts }
+  );
+
+  return Buffer.from(await image.arrayBuffer());
+}
+
+/**
+ * "Quote card": logo top-left on a light background, a bold relatable
+ * quote in a green highlight box (with one emphasized word in gold), and
+ * a photo underneath illustrating the scenario. The photo is the one
+ * part meant to change post to post - everything else is fixed branding.
+ */
+export async function renderQuoteCard({
+  quote,
+  highlightWord,
+  photoUrl,
+  logoUrl,
+}: {
+  quote: string;
+  /** The word inside `quote` to render in the gold accent color. */
+  highlightWord?: string;
+  photoUrl: string;
+  logoUrl?: string;
+}): Promise<Buffer> {
+  const [fonts, photoDataUri, logoDataUri] = await Promise.all([
+    loadFonts(),
+    fetchAsDataUri(photoUrl),
+    logoUrl ? fetchAsDataUri(logoUrl) : Promise.resolve(null),
+  ]);
+
+  const highlightSet = new Set(highlightWord ? [highlightWord] : []);
+  const quoteLines = wrapRTLWithHighlight(`"${quote}"`, 18, highlightSet);
+
+  const image = new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          background: "#F1FAEE",
+        }}
+      >
+        <div style={{ display: "flex", padding: "56px 0 0 64px" }}>
+          {logoDataUri ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoDataUri} alt="" height={58} />
+          ) : (
+            <div style={{ display: "flex", alignItems: "baseline" }}>
+              <div style={{ display: "flex", fontSize: 34, fontWeight: 700, color: "#1D3557", fontFamily: "Heebo" }}>
+                TICO
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 34,
+                  fontWeight: 700,
+                  color: "#338C5B",
+                  fontFamily: "Heebo",
+                  marginLeft: 8,
+                }}
+              >
+                FINANCE
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: "flex", padding: "48px 64px 0" }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              width: "100%",
+              background: "#338C5B",
+              borderRadius: 12,
+              padding: "56px 48px",
+            }}
+          >
+            {quoteLines.map((line, i) => (
+              <div key={i} style={{ display: "flex", marginTop: i === 0 ? 0 : 8 }}>
+                {line.map((word, j) => (
+                  <div
+                    key={j}
+                    style={{
+                      display: "flex",
+                      fontSize: 62,
+                      fontWeight: 700,
+                      color: word.highlight ? "#F5AC32" : "#FFFFFF",
+                      lineHeight: 1.3,
+                      fontFamily: "Heebo",
+                      marginLeft: j === 0 ? 0 : 18,
+                    }}
+                  >
+                    {word.text}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flex: 1, marginTop: 56, position: "relative" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photoDataUri}
+            alt=""
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
         </div>
       </div>
     ),
