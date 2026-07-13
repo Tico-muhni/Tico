@@ -395,13 +395,13 @@ export async function renderContentSlide({
               style={{
                 display: "flex",
                 background: "#FFFFFF",
-                borderRadius: 14,
-                padding: "16px 28px",
-                marginBottom: 14,
+                borderRadius: 18,
+                padding: "22px 36px",
+                marginBottom: 16,
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={logoDataUri} alt="" height={44} />
+              <img src={logoDataUri} alt="" height={72} />
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "baseline", marginBottom: 10 }}>
