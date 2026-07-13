@@ -249,7 +249,7 @@ export async function renderPostImage({
             position: "absolute",
             display: "flex",
             flexDirection: "column",
-            alignItems: "flex-end",
+            alignItems: "center",
             justifyContent: layout.justifyContent,
             padding: `${layout.paddingTop}px ${layout.paddingX}px 56px`,
             ...(layout.background ? { background: layout.background } : {}),
