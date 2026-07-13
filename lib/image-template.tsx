@@ -281,3 +281,130 @@ export async function renderPostImage({
 
   return Buffer.from(await image.arrayBuffer());
 }
+
+/**
+ * Middle-of-carousel content card: solid brand background, slide number,
+ * title, and short body text. Meant to sit between a cover slide and a
+ * closing CTA slide (both rendered via renderPostImage on the photo
+ * template) in a multi-image carousel post.
+ */
+export async function renderContentSlide({
+  slideNumber,
+  totalSlides,
+  title,
+  body,
+  businessName,
+}: {
+  slideNumber: number;
+  totalSlides: number;
+  title: string;
+  body: string;
+  businessName?: string;
+}): Promise<Buffer> {
+  const fonts = await loadFonts();
+
+  const titleLines = wrapAndReverseRTL(title, 14);
+  const bodyLines = wrapAndReverseRTL(body, 26);
+  // Purely numeric/Latin, no RTL reordering needed (or wanted).
+  const progressText = `${slideNumber} / ${totalSlides}`;
+  const businessLines = businessName ? wrapAndReverseRTL(businessName, 30) : [];
+
+  const image = new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          background: "linear-gradient(160deg, #1D3557 0%, #14243E 100%)",
+          padding: "120px 90px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            fontSize: 130,
+            fontWeight: 700,
+            color: "#F5AC32",
+            fontFamily: "Heebo",
+          }}
+        >
+          {String(slideNumber).padStart(2, "0")}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 56 }}>
+          {titleLines.map((line, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                fontSize: 66,
+                fontWeight: 700,
+                color: "#FFFFFF",
+                lineHeight: 1.3,
+                fontFamily: "Heebo",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {line}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 40 }}>
+          {bodyLines.map((line, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                fontSize: 38,
+                fontWeight: 400,
+                color: "#A8DADC",
+                lineHeight: 1.5,
+                fontFamily: "Heebo",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {line}
+            </div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            bottom: 70,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          {businessLines.length > 0 && (
+            <div
+              style={{
+                display: "flex",
+                fontSize: 26,
+                fontWeight: 400,
+                color: "#457B9D",
+                fontFamily: "Heebo",
+                marginBottom: 10,
+              }}
+            >
+              {businessLines[0]}
+            </div>
+          )}
+          <div style={{ display: "flex", fontSize: 24, fontWeight: 400, color: "#457B9D", fontFamily: "Heebo" }}>
+            {progressText}
+          </div>
+        </div>
+      </div>
+    ),
+    { width: WIDTH, height: HEIGHT, fonts }
+  );
+
+  return Buffer.from(await image.arrayBuffer());
+}
