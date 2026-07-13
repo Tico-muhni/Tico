@@ -169,36 +169,25 @@ const TEXT_COLORS = {
   dark: { headline: "#1D3557", accent: "#E63946" },
 } as const;
 
-function TextBlock({
-  lines,
-  fontSize,
-  color,
-}: {
-  lines: string[];
+type LineItem = {
+  text: string;
   fontSize: number;
   color: string;
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      {lines.map((line, i) => (
-        <div
-          key={i}
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            fontSize,
-            fontWeight: 700,
-            color,
-            lineHeight: 1.3,
-            fontFamily: "Heebo",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {line}
-        </div>
-      ))}
-    </div>
-  );
+  marginTop: number;
+};
+
+function blockLines(
+  lines: string[],
+  fontSize: number,
+  color: string,
+  blockMarginTop: number
+): LineItem[] {
+  return lines.map((text, i) => ({
+    text,
+    fontSize,
+    color,
+    marginTop: i === 0 ? blockMarginTop : 0,
+  }));
 }
 
 export async function renderPostImage({
@@ -236,46 +225,54 @@ export async function renderPostImage({
   const ctaGap = Math.max(layout.ctaGap - extraLines * 45, 90);
   const closingGap = Math.max(layout.closingGap - extraLines * 45, 80);
 
+  const items: LineItem[] = [
+    ...blockLines(hookLines, layout.hookFontSize, colors.headline, 0),
+    ...blockLines(ctaLines, layout.ctaFontSize, colors.accent, ctaGap),
+    ...blockLines(closingLines, layout.closingFontSize, colors.headline, closingGap),
+  ];
+
   const image = new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", position: "relative" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={backgroundDataUri}
-          alt=""
-          width={WIDTH}
-          height={HEIGHT}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: `${WIDTH}px`,
-            height: `${HEIGHT}px`,
-            objectFit: "cover",
-          }}
-        />
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          position: "relative",
+          backgroundImage: `url(${backgroundDataUri})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
         <div
           style={{
             position: "absolute",
             display: "flex",
             flexDirection: "column",
+            alignItems: "flex-end",
             justifyContent: layout.justifyContent,
             padding: `${layout.paddingTop}px ${layout.paddingX}px 56px`,
             ...(layout.background ? { background: layout.background } : {}),
             ...layout.position,
           }}
         >
-          <TextBlock lines={hookLines} fontSize={layout.hookFontSize} color={colors.headline} />
-          <div style={{ display: "flex", marginTop: ctaGap }}>
-            <TextBlock lines={ctaLines} fontSize={layout.ctaFontSize} color={colors.accent} />
-          </div>
-          <div style={{ display: "flex", marginTop: closingGap }}>
-            <TextBlock
-              lines={closingLines}
-              fontSize={layout.closingFontSize}
-              color={colors.headline}
-            />
-          </div>
+          {items.map((item, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                fontSize: item.fontSize,
+                fontWeight: 700,
+                color: item.color,
+                lineHeight: 1.3,
+                fontFamily: "Heebo",
+                whiteSpace: "nowrap",
+                marginTop: item.marginTop,
+              }}
+            >
+              {item.text}
+            </div>
+          ))}
         </div>
       </div>
     ),
