@@ -611,8 +611,8 @@ export async function renderBlobPhotoPost({
   ]);
   const templateDataUri = `data:image/png;base64,${templateBuf.toString("base64")}`;
 
-  const hookLines = wrapAndReverseRTL(overlayHook, 13);
-  const ctaLines = wrapAndReverseRTL(overlayCta, 15);
+  const hookLines = wrapAndReverseRTL(overlayHook, 15);
+  const ctaLines = wrapAndReverseRTL(overlayCta, 20);
 
   const image = new ImageResponse(
     (
@@ -705,8 +705,8 @@ export async function renderBoxPhotoPost({
   ]);
   const templateDataUri = `data:image/png;base64,${templateBuf.toString("base64")}`;
 
-  const hookLines = wrapAndReverseRTL(overlayHook, 13);
-  const ctaLines = wrapAndReverseRTL(overlayCta, 15);
+  const hookLines = wrapAndReverseRTL(overlayHook, 20);
+  const ctaLines = wrapAndReverseRTL(overlayCta, 26);
 
   const BOX = { left: 108, top: 135, width: 870, height: 441 };
 
