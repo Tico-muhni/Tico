@@ -220,6 +220,7 @@ export async function renderPostImage({
   textZone = "bottom",
   textColor = "light",
   flatBackground = false,
+  centerVertically = false,
 }: {
   backgroundUrl: string;
   overlayHook: string;
@@ -231,6 +232,10 @@ export async function renderPostImage({
    *  backgrounds (no photo) so the brand color reads as a flat card
    *  instead of blending into the scrim's navy tint. */
   flatBackground?: boolean;
+  /** Center the text block in the middle of the frame instead of
+   *  anchoring it to the zone's edge - reads better on flat-color cards
+   *  that would otherwise leave a lopsided block of empty space. */
+  centerVertically?: boolean;
 }): Promise<Buffer> {
   const [fonts, backgroundDataUri] = await Promise.all([
     loadFonts(),
@@ -239,6 +244,10 @@ export async function renderPostImage({
 
   const layout = getZoneLayout(textZone);
   if (flatBackground) layout.background = undefined;
+  if (centerVertically) {
+    layout.position = { top: 0, left: 0, right: 0, bottom: 0 };
+    layout.justifyContent = "center";
+  }
   const colors = TEXT_COLORS[textColor];
   const hookLines = wrapAndReverseRTL(overlayHook, layout.hookChars);
   const ctaLines = wrapAndReverseRTL(overlayCta, layout.ctaChars);
@@ -574,6 +583,272 @@ export async function renderQuoteCard({
               objectFit: "cover",
             }}
           />
+        </div>
+      </div>
+    ),
+    { width: WIDTH, height: HEIGHT, fonts }
+  );
+
+  return Buffer.from(await image.arrayBuffer());
+}
+
+/**
+ * "Blob card": a real photo (Tico standing) with a large brand-green
+ * circle bleeding in from the top-left, hosting the hook/CTA text. The
+ * circle's center/radius were measured pixel-for-pixel against the
+ * reference Canva mockup (sharp color-distance scan of the green
+ * region, then a 3-point circle fit) rather than eyeballed.
+ */
+export async function renderBlobPhotoPost({
+  photoUrl,
+  overlayHook,
+  overlayCta,
+  logoUrl,
+}: {
+  photoUrl: string;
+  overlayHook: string;
+  overlayCta: string;
+  logoUrl?: string;
+}): Promise<Buffer> {
+  const [fonts, photoDataUri, logoDataUri] = await Promise.all([
+    loadFonts(),
+    fetchAsDataUri(photoUrl),
+    logoUrl ? fetchAsDataUri(logoUrl) : Promise.resolve(null),
+  ]);
+
+  const hookLines = wrapAndReverseRTL(overlayHook, 13);
+  const ctaLines = wrapAndReverseRTL(overlayCta, 15);
+
+  // Circle fit (1080x1350 canvas): center (-2, 694), radius 735.
+  const CIRCLE_R = 735;
+  const CIRCLE_CX = -2;
+  const CIRCLE_CY = 694;
+
+  const image = new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          position: "relative",
+          backgroundImage: `url(${photoDataUri})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            display: "flex",
+            width: CIRCLE_R * 2,
+            height: CIRCLE_R * 2,
+            left: CIRCLE_CX - CIRCLE_R,
+            top: CIRCLE_CY - CIRCLE_R,
+            borderRadius: "50%",
+            background: "#338C5B",
+          }}
+        />
+
+        <div style={{ display: "flex", position: "absolute", top: 48, right: 48 }}>
+          {logoDataUri ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoDataUri} alt="" height={52} />
+          ) : (
+            <div style={{ display: "flex", alignItems: "baseline" }}>
+              <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#1D3557", fontFamily: "Heebo" }}>
+                TICO
+              </div>
+              <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#338C5B", fontFamily: "Heebo", marginLeft: 8 }}>
+                FINANCE
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Height is deliberately much larger than any realistic text
+            block: satori's flex layout will compress (overlap) children
+            that overflow a tightly-fitted fixed-height container, so we
+            center within a generously oversized box instead of a
+            content-sized one. */}
+        <div
+          style={{
+            position: "absolute",
+            left: 40,
+            top: -180,
+            width: 600,
+            height: 1000,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {hookLines.map((line, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                fontSize: 60,
+                fontWeight: 700,
+                color: "#FFFFFF",
+                lineHeight: 1.3,
+                fontFamily: "Heebo",
+                whiteSpace: "nowrap",
+                marginTop: i === 0 ? 0 : 0,
+              }}
+            >
+              {line}
+            </div>
+          ))}
+          {ctaLines.map((line, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                fontSize: 44,
+                fontWeight: 700,
+                color: "#F5AC32",
+                lineHeight: 1.3,
+                fontFamily: "Heebo",
+                whiteSpace: "nowrap",
+                marginTop: i === 0 ? 56 : 0,
+              }}
+            >
+              {line}
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+    { width: WIDTH, height: HEIGHT, fonts }
+  );
+
+  return Buffer.from(await image.arrayBuffer());
+}
+
+/**
+ * "Box card": a real photo (Tico at his desk) with a brand-green
+ * rectangle hosting the hook/CTA text. Rectangle bounds were measured
+ * pixel-for-pixel against the reference Canva mockup the same way as
+ * the blob card's circle.
+ */
+export async function renderBoxPhotoPost({
+  photoUrl,
+  overlayHook,
+  overlayCta,
+  logoUrl,
+}: {
+  photoUrl: string;
+  overlayHook: string;
+  overlayCta: string;
+  logoUrl?: string;
+}): Promise<Buffer> {
+  const [fonts, photoDataUri, logoDataUri] = await Promise.all([
+    loadFonts(),
+    fetchAsDataUri(photoUrl),
+    logoUrl ? fetchAsDataUri(logoUrl) : Promise.resolve(null),
+  ]);
+
+  const hookLines = wrapAndReverseRTL(overlayHook, 13);
+  const ctaLines = wrapAndReverseRTL(overlayCta, 15);
+
+  // Measured (1080x1350 canvas): x 108-978, y 135-576.
+  const BOX = { left: 108, top: 135, width: 870, height: 441 };
+
+  const image = new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          position: "relative",
+          backgroundImage: `url(${photoDataUri})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            display: "flex",
+            left: BOX.left,
+            top: BOX.top,
+            width: BOX.width,
+            height: BOX.height,
+            borderRadius: 12,
+            background: "#338C5B",
+          }}
+        />
+
+        {/* Text sits in its own generously-tall container centered on the
+            box's midpoint - see renderBlobPhotoPost for why this can't be
+            height:BOX.height directly (satori overlaps overflowing text
+            in a tightly-fitted fixed-height flex column). */}
+        <div
+          style={{
+            position: "absolute",
+            left: BOX.left,
+            top: BOX.top + BOX.height / 2 - 500,
+            width: BOX.width,
+            height: 1000,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0 56px",
+          }}
+        >
+          {hookLines.map((line, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                fontSize: 54,
+                fontWeight: 700,
+                color: "#FFFFFF",
+                lineHeight: 1.3,
+                fontFamily: "Heebo",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {line}
+            </div>
+          ))}
+          {ctaLines.map((line, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                fontSize: 38,
+                fontWeight: 700,
+                color: "#F5AC32",
+                lineHeight: 1.3,
+                fontFamily: "Heebo",
+                whiteSpace: "nowrap",
+                marginTop: i === 0 ? 40 : 0,
+              }}
+            >
+              {line}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", position: "absolute", top: 48, right: 48 }}>
+          {logoDataUri ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoDataUri} alt="" height={52} />
+          ) : (
+            <div style={{ display: "flex", alignItems: "baseline" }}>
+              <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#1D3557", fontFamily: "Heebo" }}>
+                TICO
+              </div>
+              <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#338C5B", fontFamily: "Heebo", marginLeft: 8 }}>
+                FINANCE
+              </div>
+            </div>
+          )}
         </div>
       </div>
     ),
