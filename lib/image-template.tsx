@@ -593,36 +593,26 @@ export async function renderQuoteCard({
 }
 
 /**
- * "Blob card": a real photo (Tico standing) with a large brand-green
- * circle bleeding in from the top-left, hosting the hook/CTA text. The
- * circle's center/radius were measured pixel-for-pixel against the
- * reference Canva mockup (sharp color-distance scan of the green
- * region, then a 3-point circle fit) rather than eyeballed.
+ * "Blob card": the actual finished Canva template (photo + green circle
+ * + logo, all pre-composed by the client) used as-is for the full-bleed
+ * background - we only draw the hook/CTA text on top, in the text-safe
+ * zone measured against that same template image.
  */
 export async function renderBlobPhotoPost({
-  photoUrl,
   overlayHook,
   overlayCta,
-  logoUrl,
 }: {
-  photoUrl: string;
   overlayHook: string;
   overlayCta: string;
-  logoUrl?: string;
 }): Promise<Buffer> {
-  const [fonts, photoDataUri, logoDataUri] = await Promise.all([
+  const [fonts, templateBuf] = await Promise.all([
     loadFonts(),
-    fetchAsDataUri(photoUrl),
-    logoUrl ? fetchAsDataUri(logoUrl) : Promise.resolve(null),
+    readFile(join(process.cwd(), "assets/templates/investors-blob.png")),
   ]);
+  const templateDataUri = `data:image/png;base64,${templateBuf.toString("base64")}`;
 
   const hookLines = wrapAndReverseRTL(overlayHook, 13);
   const ctaLines = wrapAndReverseRTL(overlayCta, 15);
-
-  // Circle fit (1080x1350 canvas): center (-2, 694), radius 735.
-  const CIRCLE_R = 735;
-  const CIRCLE_CX = -2;
-  const CIRCLE_CY = 694;
 
   const image = new ImageResponse(
     (
@@ -632,40 +622,11 @@ export async function renderBlobPhotoPost({
           height: "100%",
           display: "flex",
           position: "relative",
-          backgroundImage: `url(${photoDataUri})`,
+          backgroundImage: `url(${templateDataUri})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            display: "flex",
-            width: CIRCLE_R * 2,
-            height: CIRCLE_R * 2,
-            left: CIRCLE_CX - CIRCLE_R,
-            top: CIRCLE_CY - CIRCLE_R,
-            borderRadius: "50%",
-            background: "#338C5B",
-          }}
-        />
-
-        <div style={{ display: "flex", position: "absolute", top: 48, right: 48 }}>
-          {logoDataUri ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoDataUri} alt="" height={52} />
-          ) : (
-            <div style={{ display: "flex", alignItems: "baseline" }}>
-              <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#1D3557", fontFamily: "Heebo" }}>
-                TICO
-              </div>
-              <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#338C5B", fontFamily: "Heebo", marginLeft: 8 }}>
-                FINANCE
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Height is deliberately much larger than any realistic text
             block: satori's flex layout will compress (overlap) children
             that overflow a tightly-fitted fixed-height container, so we
@@ -695,7 +656,6 @@ export async function renderBlobPhotoPost({
                 lineHeight: 1.3,
                 fontFamily: "Heebo",
                 whiteSpace: "nowrap",
-                marginTop: i === 0 ? 0 : 0,
               }}
             >
               {line}
@@ -728,32 +688,26 @@ export async function renderBlobPhotoPost({
 }
 
 /**
- * "Box card": a real photo (Tico at his desk) with a brand-green
- * rectangle hosting the hook/CTA text. Rectangle bounds were measured
- * pixel-for-pixel against the reference Canva mockup the same way as
- * the blob card's circle.
+ * "Box card": same approach as renderBlobPhotoPost, over the desk-photo
+ * template with the green rectangle. Text sits in the measured rectangle
+ * bounds (x 108-978, y 135-576 on the 1080x1350 canvas).
  */
 export async function renderBoxPhotoPost({
-  photoUrl,
   overlayHook,
   overlayCta,
-  logoUrl,
 }: {
-  photoUrl: string;
   overlayHook: string;
   overlayCta: string;
-  logoUrl?: string;
 }): Promise<Buffer> {
-  const [fonts, photoDataUri, logoDataUri] = await Promise.all([
+  const [fonts, templateBuf] = await Promise.all([
     loadFonts(),
-    fetchAsDataUri(photoUrl),
-    logoUrl ? fetchAsDataUri(logoUrl) : Promise.resolve(null),
+    readFile(join(process.cwd(), "assets/templates/refinance-box.png")),
   ]);
+  const templateDataUri = `data:image/png;base64,${templateBuf.toString("base64")}`;
 
   const hookLines = wrapAndReverseRTL(overlayHook, 13);
   const ctaLines = wrapAndReverseRTL(overlayCta, 15);
 
-  // Measured (1080x1350 canvas): x 108-978, y 135-576.
   const BOX = { left: 108, top: 135, width: 870, height: 441 };
 
   const image = new ImageResponse(
@@ -764,28 +718,12 @@ export async function renderBoxPhotoPost({
           height: "100%",
           display: "flex",
           position: "relative",
-          backgroundImage: `url(${photoDataUri})`,
+          backgroundImage: `url(${templateDataUri})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            display: "flex",
-            left: BOX.left,
-            top: BOX.top,
-            width: BOX.width,
-            height: BOX.height,
-            borderRadius: 12,
-            background: "#338C5B",
-          }}
-        />
-
-        {/* Text sits in its own generously-tall container centered on the
-            box's midpoint - see renderBlobPhotoPost for why this can't be
-            height:BOX.height directly (satori overlaps overflowing text
-            in a tightly-fitted fixed-height flex column). */}
+        {/* Same oversized-container centering trick as the blob card. */}
         <div
           style={{
             position: "absolute",
@@ -833,22 +771,6 @@ export async function renderBoxPhotoPost({
               {line}
             </div>
           ))}
-        </div>
-
-        <div style={{ display: "flex", position: "absolute", top: 48, right: 48 }}>
-          {logoDataUri ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoDataUri} alt="" height={52} />
-          ) : (
-            <div style={{ display: "flex", alignItems: "baseline" }}>
-              <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#1D3557", fontFamily: "Heebo" }}>
-                TICO
-              </div>
-              <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#338C5B", fontFamily: "Heebo", marginLeft: 8 }}>
-                FINANCE
-              </div>
-            </div>
-          )}
         </div>
       </div>
     ),
