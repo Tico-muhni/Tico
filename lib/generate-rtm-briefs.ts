@@ -7,6 +7,10 @@ import { generateRtmBrief } from "@/lib/rtm-brief";
 import { getContentModel } from "@/lib/anthropic";
 import type { RtmSource } from "@/lib/rtm-news-sources";
 
+// How many ranked briefs to produce per daily scan - a fixed, curated
+// shortlist rather than an open-ended list of everything that matched.
+const DAILY_BRIEF_COUNT = 3;
+
 type Candidate = {
   source: RtmSource;
   title: string;
@@ -22,7 +26,18 @@ function parsePubDate(pubDate: string | null): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-export async function runRtmBriefGeneration(maxNewItems = 8) {
+function relevanceScore(candidate: Candidate, parsedDate: Date | null): number {
+  const keywordScore = candidate.matchedKeywords.length * 1000;
+  // More recent items score higher, but never enough to outrank a clearly
+  // more relevant (more keyword hits) item.
+  const ageHours = parsedDate
+    ? (Date.now() - parsedDate.getTime()) / (1000 * 60 * 60)
+    : 999;
+  const recencyScore = Math.max(0, 100 - ageHours);
+  return keywordScore + recencyScore;
+}
+
+export async function runRtmBriefGeneration(dailyCount = DAILY_BRIEF_COUNT) {
   const [run] = await db.insert(rtmRuns).values({ status: "running" }).returning();
 
   try {
@@ -57,19 +72,30 @@ export async function runRtmBriefGeneration(maxNewItems = 8) {
       }
     }
 
-    const toProcess = candidates.slice(0, maxNewItems);
+    // Rank by relevance (keyword hits, then recency) and keep only the
+    // top N - this is a curated daily shortlist, not an ever-growing feed.
+    const ranked = candidates
+      .map((candidate) => {
+        const parsedDate = parsePubDate(candidate.pubDate);
+        return { candidate, parsedDate, score: relevanceScore(candidate, parsedDate) };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, dailyCount);
+
     const model = getContentModel();
     let briefsGenerated = 0;
+    let rank = 0;
 
-    for (const candidate of toProcess) {
+    for (const { candidate, parsedDate } of ranked) {
       const [newsRow] = await db
         .insert(rtmNewsItems)
         .values({
+          runId: run.id,
           source: candidate.source,
           title: candidate.title,
           url: candidate.url,
           summary: candidate.description,
-          publishedAt: parsePubDate(candidate.pubDate),
+          publishedAt: parsedDate,
           matchedKeywords: candidate.matchedKeywords,
         })
         .onConflictDoNothing()
@@ -83,8 +109,10 @@ export async function runRtmBriefGeneration(maxNewItems = 8) {
           summary: candidate.description,
         });
 
+        rank += 1;
         await db.insert(rtmBriefs).values({
           newsItemId: newsRow.id,
+          rank,
           whatHappened: brief.whatHappened,
           meaningForMortgageHolders: brief.meaningForMortgageHolders,
           closingQuestion: brief.closingQuestion,

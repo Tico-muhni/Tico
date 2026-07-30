@@ -210,8 +210,19 @@ export const imageTemplates = pgTable("image_templates", {
     .defaultNow(),
 });
 
+export const rtmRuns = pgTable("rtm_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runAt: timestamp("run_at", { withTimezone: true }).notNull().defaultNow(),
+  itemsFound: integer("items_found").notNull().default(0),
+  briefsGenerated: integer("briefs_generated").notNull().default(0),
+  status: rtmRunStatusEnum("status").notNull().default("running"),
+  feedErrors: text("feed_errors").array().notNull().default([]),
+  error: text("error"),
+});
+
 export const rtmNewsItems = pgTable("rtm_news_items", {
   id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").references(() => rtmRuns.id, { onDelete: "set null" }),
   source: rtmSourceEnum("source").notNull(),
   title: text("title").notNull(),
   url: text("url").notNull().unique(),
@@ -229,6 +240,7 @@ export const rtmBriefs = pgTable("rtm_briefs", {
     .notNull()
     .unique()
     .references(() => rtmNewsItems.id, { onDelete: "cascade" }),
+  rank: integer("rank").notNull().default(1),
   whatHappened: text("what_happened").notNull(),
   meaningForMortgageHolders: text("meaning_for_mortgage_holders").notNull(),
   closingQuestion: text("closing_question").notNull(),
@@ -237,14 +249,4 @@ export const rtmBriefs = pgTable("rtm_briefs", {
   generatedAt: timestamp("generated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
-
-export const rtmRuns = pgTable("rtm_runs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  runAt: timestamp("run_at", { withTimezone: true }).notNull().defaultNow(),
-  itemsFound: integer("items_found").notNull().default(0),
-  briefsGenerated: integer("briefs_generated").notNull().default(0),
-  status: rtmRunStatusEnum("status").notNull().default("running"),
-  feedErrors: text("feed_errors").array().notNull().default([]),
-  error: text("error"),
 });

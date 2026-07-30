@@ -6,6 +6,7 @@ import type { RtmSource } from "@/lib/rtm-news-sources";
 
 export type RtmBriefView = {
   id: string;
+  rank: number;
   source: RtmSource;
   sourceLabel: string;
   title: string;
@@ -42,6 +43,12 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
         style={{ backgroundColor: "#0F243E" }}
       >
         <div className="flex items-center gap-2 text-xs">
+          <span
+            className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
+            style={{ backgroundColor: "#D4AF37", color: "#0F243E" }}
+          >
+            {brief.rank}
+          </span>
           <span
             className="rounded-full px-2.5 py-1 font-semibold"
             style={{ backgroundColor: "#2E8B57" }}
