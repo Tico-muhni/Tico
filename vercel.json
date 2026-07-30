@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/generate-content",
       "schedule": "0 6 * * 1"
+    },
+    {
+      "path": "/api/cron/rtm-briefs",
+      "schedule": "0 5 * * *"
     }
   ]
 }

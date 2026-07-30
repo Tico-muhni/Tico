@@ -5,7 +5,7 @@ const BUSINESS_CONTEXT = `
 ראשונה/שנייה שרוצים להבין את תהליך המשכנתא.
 `.trim();
 
-const COMPLIANCE_RULES = `
+export const COMPLIANCE_RULES = `
 כללי ציות מחייבים (תוכן בתחום ייעוץ פיננסי מפוקח):
 - אין להבטיח תוצאה, ריבית, אישור הלוואה או רווח ("נבטיח לך ריבית הכי נמוכה" אסור).
 - אין לציין מספרי ריבית/החזר קונקרטיים כהבטחה - ניתן להשתמש בטווחים כלליים ובניסוח "משתנה לפי מקרה".
@@ -98,7 +98,7 @@ const DRAFT_TOOL_SCHEMA = {
 };
 
 let client: Anthropic | null = null;
-function getClient() {
+export function getClient() {
   if (!client) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {

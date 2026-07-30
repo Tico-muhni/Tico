@@ -70,6 +70,24 @@ export const templateTextColorEnum = pgEnum("template_text_color", [
   "dark",
 ]);
 
+export const rtmSourceEnum = pgEnum("rtm_source", [
+  "ynet",
+  "globes",
+  "calcalist",
+]);
+
+export const rtmBriefStatusEnum = pgEnum("rtm_brief_status", [
+  "new",
+  "approved",
+  "dismissed",
+]);
+
+export const rtmRunStatusEnum = pgEnum("rtm_run_status", [
+  "running",
+  "success",
+  "failed",
+]);
+
 export const topics = pgTable("topics", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
@@ -190,4 +208,43 @@ export const imageTemplates = pgTable("image_templates", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+});
+
+export const rtmNewsItems = pgTable("rtm_news_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  source: rtmSourceEnum("source").notNull(),
+  title: text("title").notNull(),
+  url: text("url").notNull().unique(),
+  summary: text("summary"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  matchedKeywords: text("matched_keywords").array().notNull().default([]),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const rtmBriefs = pgTable("rtm_briefs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  newsItemId: uuid("news_item_id")
+    .notNull()
+    .unique()
+    .references(() => rtmNewsItems.id, { onDelete: "cascade" }),
+  whatHappened: text("what_happened").notNull(),
+  meaningForMortgageHolders: text("meaning_for_mortgage_holders").notNull(),
+  closingQuestion: text("closing_question").notNull(),
+  status: rtmBriefStatusEnum("status").notNull().default("new"),
+  aiModel: text("ai_model"),
+  generatedAt: timestamp("generated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const rtmRuns = pgTable("rtm_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runAt: timestamp("run_at", { withTimezone: true }).notNull().defaultNow(),
+  itemsFound: integer("items_found").notNull().default(0),
+  briefsGenerated: integer("briefs_generated").notNull().default(0),
+  status: rtmRunStatusEnum("status").notNull().default("running"),
+  feedErrors: text("feed_errors").array().notNull().default([]),
+  error: text("error"),
 });
