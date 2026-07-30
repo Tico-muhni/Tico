@@ -3,6 +3,7 @@ import { auth, signOut } from "@/lib/auth";
 
 const NAV_ITEMS = [
   { href: "/admin/drafts", label: "טיוטות לאישור" },
+  { href: "/admin/rtm", label: "RTM חדשות" },
   { href: "/admin/subscribers", label: "רשימת תפוצה" },
   { href: "/admin/topics", label: "נושאים" },
   { href: "/admin/templates", label: "תבניות תמונה" },
