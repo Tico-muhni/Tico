@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { desc, asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { rtmBriefs, rtmNewsItems, rtmRuns } from "@/drizzle/schema";
-import { RTM_SOURCE_LABEL } from "@/lib/rtm-news-sources";
 import { auth } from "@/lib/auth";
 
 function isAuthorized(req: NextRequest, hasSession: boolean) {
@@ -57,7 +56,6 @@ export async function GET(req: NextRequest) {
       id: row.id,
       rank: row.rank,
       source: row.source,
-      sourceLabel: RTM_SOURCE_LABEL[row.source],
       title: row.title,
       url: row.url,
       publishedAt: row.publishedAt,

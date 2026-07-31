@@ -1,5 +1,3 @@
-import type { RtmSource } from "@/lib/rtm-news-sources";
-import { RTM_SOURCE_LABEL } from "@/lib/rtm-news-sources";
 
 // RTM briefs are generated with Google's Gemini API, which has a genuinely
 // free tier (no credit card required) - see SETUP.md. This keeps the daily
@@ -66,7 +64,7 @@ function extractJson(text: string): GeneratedRtmBrief {
 }
 
 export async function generateRtmBrief(newsItem: {
-  source: RtmSource;
+  source: string;
   title: string;
   summary: string | null;
 }): Promise<GeneratedRtmBrief> {
@@ -78,7 +76,7 @@ export async function generateRtmBrief(newsItem: {
   }
 
   const model = getBriefModel();
-  const userPrompt = `ידיעה מ-${RTM_SOURCE_LABEL[newsItem.source]}:
+  const userPrompt = `ידיעה מ-${newsItem.source}:
 כותרת: ${newsItem.title}
 ${newsItem.summary ? `תקציר: ${newsItem.summary}` : ""}
 

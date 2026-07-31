@@ -3,6 +3,7 @@ export type RssItem = {
   link: string;
   pubDate: string | null;
   description: string | null;
+  source: string | null;
 };
 
 function decodeEntities(raw: string): string {
@@ -31,15 +32,24 @@ export function parseRssItems(xml: string): RssItem[] {
   const items: RssItem[] = [];
 
   for (const block of itemBlocks) {
-    const title = extractTag(block, "title");
+    let title = extractTag(block, "title");
     const link = extractTag(block, "link");
     if (!title || !link) continue;
+
+    // Google News items carry the publisher in a <source> tag and append
+    // " - Publisher" to the title. Extract the publisher and strip the suffix
+    // so the stored title is clean.
+    const source = extractTag(block, "source");
+    if (source && title.endsWith(` - ${source}`)) {
+      title = title.slice(0, title.length - source.length - 3).trim();
+    }
 
     items.push({
       title,
       link,
       pubDate: extractTag(block, "pubDate"),
       description: extractTag(block, "description"),
+      source,
     });
   }
 

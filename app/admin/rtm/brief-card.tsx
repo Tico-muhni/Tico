@@ -2,13 +2,11 @@
 
 import { useTransition } from "react";
 import { setRtmBriefStatusAction } from "./actions";
-import type { RtmSource } from "@/lib/rtm-news-sources";
 
 export type RtmBriefView = {
   id: string;
   rank: number;
-  source: RtmSource;
-  sourceLabel: string;
+  source: string;
   title: string;
   url: string;
   publishedAt: string | null;
@@ -53,7 +51,7 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
             className="rounded-full px-2.5 py-1 font-semibold"
             style={{ backgroundColor: "#2E8B57" }}
           >
-            {brief.sourceLabel}
+            {brief.source}
           </span>
           {brief.publishedAt && (
             <span className="text-white/60">
