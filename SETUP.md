@@ -20,6 +20,10 @@
 ### 1. Vercel + בסיס נתונים (5 דקות)
 
 - צרו חשבון ב-vercel.com וחברו את הריפו הזה כפרויקט.
+- **חשוב**: ודאו שב-Settings → Build and Deployment, ה-**Framework Preset**
+  מוגדר כ-**Next.js** (ולא "Other"). אם הוא "Other", הבנייה תצליח אבל כל
+  הדפים יחזירו 404 - Vercel לא ידע להגיש את האפליקציה. אחרי שינוי ההגדרה
+  צריך Redeploy.
 - הוסיפו Postgres דרך Vercel (Storage → Postgres) או ב-neon.tech - שני
   אלה עובדים, פשוט תעתיקו את `DATABASE_URL` לתוך משתני הסביבה של הפרויקט.
 - אחרי חיבור מסד הנתונים, הריצו מקומית או ב-Vercel:
