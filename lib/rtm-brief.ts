@@ -84,41 +84,59 @@ ${newsItem.summary ? `תקציר: ${newsItem.summary}` : ""}
 
 ${OUTPUT_INSTRUCTIONS}`;
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: `${RTM_BUSINESS_CONTEXT}\n\n${RTM_COMPLIANCE_RULES}` }],
-        },
-        contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.7,
-          // The default Gemini Flash model "thinks" before answering, and that
-          // reasoning is billed against maxOutputTokens. A low budget (e.g.
-          // 800) gets consumed by thinking, truncating the JSON answer into
-          // invalid JSON. Give enough room for the thinking plus the output.
-          maxOutputTokens: 3000,
-        },
-      }),
-      cache: "no-store",
+  const requestBody = JSON.stringify({
+    systemInstruction: {
+      parts: [{ text: `${RTM_BUSINESS_CONTEXT}\n\n${RTM_COMPLIANCE_RULES}` }],
+    },
+    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+    generationConfig: {
+      responseMimeType: "application/json",
+      temperature: 0.7,
+      // The default Gemini Flash model "thinks" before answering, and that
+      // reasoning is billed against maxOutputTokens. A low budget (e.g. 800)
+      // gets consumed by thinking, truncating the JSON answer into invalid
+      // JSON. Give enough room for the thinking plus the output.
+      maxOutputTokens: 3000,
+    },
+  });
+
+  // The free tier occasionally returns 429 (rate limit) or 503 (model
+  // overloaded / high demand). Those are transient, so retry a couple of
+  // times with a short backoff before giving up.
+  const TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
+  const MAX_ATTEMPTS = 3;
+  let lastError = "";
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: requestBody,
+        cache: "no-store",
+      }
+    );
+
+    if (res.ok) {
+      const data = await res.json();
+      const text: string | undefined =
+        data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) {
+        throw new Error("Gemini did not return a structured RTM brief.");
+      }
+      return extractJson(text);
     }
-  );
 
-  if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Gemini API error ${res.status}: ${body.slice(0, 300)}`);
+    lastError = `Gemini API error ${res.status}: ${body.slice(0, 300)}`;
+
+    // Only retry transient errors, and not after the final attempt.
+    if (!TRANSIENT_STATUSES.has(res.status) || attempt === MAX_ATTEMPTS) {
+      throw new Error(lastError);
+    }
+    await new Promise((resolve) => setTimeout(resolve, attempt * 2000));
   }
 
-  const data = await res.json();
-  const text: string | undefined =
-    data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error("Gemini did not return a structured RTM brief.");
-  }
-
-  return extractJson(text);
+  throw new Error(lastError);
 }
