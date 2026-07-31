@@ -3,8 +3,7 @@ import { db } from "@/lib/db";
 import { rtmNewsItems, rtmBriefs, rtmRuns } from "@/drizzle/schema";
 import { RTM_NEWS_FEEDS, textMatchesKeywords } from "@/lib/rtm-news-sources";
 import { fetchRssItems } from "@/lib/rtm-rss";
-import { generateRtmBrief } from "@/lib/rtm-brief";
-import { getContentModel } from "@/lib/anthropic";
+import { generateRtmBrief, getBriefModel } from "@/lib/rtm-brief";
 import type { RtmSource } from "@/lib/rtm-news-sources";
 
 // How many ranked briefs to produce per daily scan - a fixed, curated
@@ -82,7 +81,7 @@ export async function runRtmBriefGeneration(dailyCount = DAILY_BRIEF_COUNT) {
       .sort((a, b) => b.score - a.score)
       .slice(0, dailyCount);
 
-    const model = getContentModel();
+    const model = getBriefModel();
     let briefsGenerated = 0;
     let rank = 0;
 
