@@ -1,50 +1,35 @@
-export type RtmSource = "ynet" | "globes" | "calcalist";
+// Instead of a few hard-coded site RSS feeds (which break when a site changes
+// its feed URL), the RTM tool searches Google News for the target topics. This
+// covers the whole web - any Israeli publisher that Google News indexes - and
+// returns a standard RSS feed we can parse with the existing parser.
 
-export type RtmFeed = {
-  source: RtmSource;
+export type RtmQuery = {
   label: string;
-  url: string;
+  query: string;
 };
 
-// Best-effort public RSS endpoints for the three sites. These were not
-// verified against the live sites from this environment (outbound network
-// to Israeli news domains is blocked in the dev/build sandbox) - if a feed
-// stops returning items, check the site's current RSS URL and update it
-// here. Nothing else in the pipeline needs to change.
-export const RTM_NEWS_FEEDS: RtmFeed[] = [
-  {
-    source: "ynet",
-    label: "Ynet - כלכלה",
-    url: "https://www.ynet.co.il/Integration/StoryRss2.xml",
-  },
-  {
-    source: "globes",
-    label: "גלובס - נדל״ן",
-    url: "https://www.globes.co.il/webservice/rss/rssfeeder.asmx/FeederNode?iID=2",
-  },
-  {
-    source: "calcalist",
-    label: "כלכליסט - כל החדשות",
-    url: "https://www.calcalist.co.il/GeneralRSS/0,16335,L-3674,00.xml",
-  },
+// Each query becomes a Google News RSS search. Hebrew, Israel edition.
+export const RTM_SEARCH_QUERIES: RtmQuery[] = [
+  { label: "משכנתאות", query: 'משכנתא OR "מיחזור משכנתא" OR "החזר חודשי"' },
+  { label: "ריבית", query: '"ריבית בנק ישראל" OR "ריבית הפריים" OR "הריבית במשק"' },
+  { label: "נדל״ן ודיור", query: '"מחירי דירות" OR "שוק הנדל\\"ן" OR "שוק הדיור" OR "רוכשי דירה"' },
 ];
 
-export const RTM_SOURCE_LABEL: Record<RtmSource, string> = {
-  ynet: "Ynet",
-  globes: "גלובס",
-  calcalist: "כלכליסט",
-};
+// Restrict each search to recent items so the daily brief stays timely.
+const RECENCY = "when:5d";
 
-// A news item is considered relevant if its title+description contains at
-// least one of these. Keep this list focused on mortgages / interest rates
-// / housing so the AI briefing step only runs on on-topic items.
+export function googleNewsRssUrl(query: string): string {
+  const q = encodeURIComponent(`${query} ${RECENCY}`);
+  return `https://news.google.com/rss/search?q=${q}&hl=he&gl=IL&ceid=IL:he`;
+}
+
+// After searching, we still filter titles to on-topic items as a safety net,
+// so a broad match doesn't slip through.
 export const RTM_KEYWORDS: string[] = [
   "משכנתא",
   "משכנתאות",
   "ריבית",
   "בנק ישראל",
-  "הריבית במשק",
-  "ריבית הפריים",
   "פריים",
   "נדל״ן",
   "נדלן",
@@ -59,7 +44,7 @@ export const RTM_KEYWORDS: string[] = [
   "מיחזור משכנתא",
   "הלוואה לדיור",
   "קבלנים",
-  "מ״מ",
+  "דיור",
 ];
 
 export function textMatchesKeywords(text: string): string[] {

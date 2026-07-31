@@ -2,7 +2,6 @@ import { asc, desc, eq } from "drizzle-orm";
 import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { rtmBriefs, rtmNewsItems, rtmRuns } from "@/drizzle/schema";
-import { RTM_SOURCE_LABEL } from "@/lib/rtm-news-sources";
 import GenerateRtmNowForm from "./generate-now-form";
 import RtmBriefCard, { type RtmBriefView } from "./brief-card";
 
@@ -39,7 +38,6 @@ export default async function RtmPage() {
     id: row.id,
     rank: row.rank,
     source: row.source,
-    sourceLabel: RTM_SOURCE_LABEL[row.source],
     title: row.title,
     url: row.url,
     publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
@@ -60,7 +58,7 @@ export default async function RtmPage() {
             RTM · 3 הכתבות של היום
           </h1>
           <p className="text-xs text-white/60">
-            סריקה יומית של Ynet, גלובס וכלכליסט בנושאי משכנתאות/ריבית/נדל&quot;ן
+            סריקה יומית של חדשות מכל האינטרנט (Google News) בנושאי משכנתאות/ריבית/נדל&quot;ן
           </p>
         </div>
         <div className="flex items-center gap-3 text-xs text-white/60">

@@ -70,12 +70,6 @@ export const templateTextColorEnum = pgEnum("template_text_color", [
   "dark",
 ]);
 
-export const rtmSourceEnum = pgEnum("rtm_source", [
-  "ynet",
-  "globes",
-  "calcalist",
-]);
-
 export const rtmBriefStatusEnum = pgEnum("rtm_brief_status", [
   "new",
   "approved",
@@ -223,7 +217,9 @@ export const rtmRuns = pgTable("rtm_runs", {
 export const rtmNewsItems = pgTable("rtm_news_items", {
   id: uuid("id").primaryKey().defaultRandom(),
   runId: uuid("run_id").references(() => rtmRuns.id, { onDelete: "set null" }),
-  source: rtmSourceEnum("source").notNull(),
+  // Publisher name (free text), e.g. "Ynet", "גלובס", "כלכליסט", "TheMarker".
+  // Not an enum, because Google News search returns items from many sources.
+  source: text("source").notNull(),
   title: text("title").notNull(),
   url: text("url").notNull().unique(),
   summary: text("summary"),
