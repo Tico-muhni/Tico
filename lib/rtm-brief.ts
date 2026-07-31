@@ -33,7 +33,9 @@ const OUTPUT_INSTRUCTIONS = `
 `.trim();
 
 export function getBriefModel() {
-  return process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  // "-latest" auto-resolves to the current Gemini Flash model, so this keeps
+  // working when a specific dated version is retired. Override with GEMINI_MODEL.
+  return process.env.GEMINI_MODEL || "gemini-flash-latest";
 }
 
 export type GeneratedRtmBrief = {

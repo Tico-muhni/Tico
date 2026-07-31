@@ -103,7 +103,7 @@
 1. היכנסו ל-https://aistudio.google.com/apikey (התחברות עם חשבון Google).
 2. לחצו "Create API key" והעתיקו את המפתח.
 3. שימו אותו ב-`GEMINI_API_KEY`. (`GEMINI_MODEL` אופציונלי, ברירת מחדל
-   `gemini-2.0-flash`.)
+   `gemini-flash-latest`.)
 
 זהו - מלבד `DATABASE_URL` (וכניסה לפאנל), מודול ה-RTM לא דורש שום
 חשבון בתשלום. `ANTHROPIC_API_KEY` נדרש רק לצד השיווקי (פוסטים/מיילים),
