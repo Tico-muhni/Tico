@@ -50,3 +50,26 @@ export const RTM_KEYWORDS: string[] = [
 export function textMatchesKeywords(text: string): string[] {
   return RTM_KEYWORDS.filter((keyword) => text.includes(keyword));
 }
+
+// Google News indexes the whole web, so a Hebrew-language query can surface
+// foreign aggregators that re-publish translated content (e.g. a ".vn" site).
+// Keep only genuine Israeli publishers: any ".il" domain, plus a short
+// allowlist of well-known Israeli outlets that use ".com".
+const ISRAELI_DOTCOM_ALLOWLIST = new Set([
+  "themarker.com",
+  "globes.com",
+  "haaretz.com",
+  "calcalistech.com",
+]);
+
+export function isIsraeliSource(sourceUrl: string | null): boolean {
+  if (!sourceUrl) return false;
+  let host: string;
+  try {
+    host = new URL(sourceUrl).host.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return false;
+  }
+  if (host === "il" || host.endsWith(".il")) return true;
+  return ISRAELI_DOTCOM_ALLOWLIST.has(host);
+}

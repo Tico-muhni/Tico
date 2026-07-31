@@ -4,7 +4,13 @@ export type RssItem = {
   pubDate: string | null;
   description: string | null;
   source: string | null;
+  sourceUrl: string | null;
 };
+
+function extractSourceUrl(block: string): string | null {
+  const match = block.match(/<source[^>]*\burl="([^"]+)"[^>]*>/i);
+  return match ? match[1] : null;
+}
 
 function decodeEntities(raw: string): string {
   return raw
@@ -50,6 +56,7 @@ export function parseRssItems(xml: string): RssItem[] {
       pubDate: extractTag(block, "pubDate"),
       description: extractTag(block, "description"),
       source,
+      sourceUrl: extractSourceUrl(block),
     });
   }
 

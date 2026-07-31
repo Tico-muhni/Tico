@@ -5,6 +5,7 @@ import {
   RTM_SEARCH_QUERIES,
   googleNewsRssUrl,
   textMatchesKeywords,
+  isIsraeliSource,
 } from "@/lib/rtm-news-sources";
 import { fetchRssItems } from "@/lib/rtm-rss";
 import { generateRtmBrief, getBriefModel } from "@/lib/rtm-brief";
@@ -55,6 +56,8 @@ export async function runRtmBriefGeneration(dailyCount = DAILY_BRIEF_COUNT) {
         const items = await fetchRssItems(googleNewsRssUrl(q.query));
         for (const item of items) {
           if (existingUrls.has(item.link) || byUrl.has(item.link)) continue;
+          // Keep only genuine Israeli publishers (skip foreign aggregators).
+          if (!isIsraeliSource(item.sourceUrl)) continue;
           const haystack = `${item.title} ${item.description ?? ""}`;
           const matchedKeywords = textMatchesKeywords(haystack);
           if (matchedKeywords.length === 0) continue;
