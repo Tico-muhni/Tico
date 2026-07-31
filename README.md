@@ -40,7 +40,7 @@ Blob.
 
 - `lib/rtm-news-sources.ts` - כתובות ה-RSS ומילות המפתח לסינון.
 - `lib/rtm-rss.ts` - שליפה ופענוח RSS.
-- `lib/rtm-brief.ts` - יצירת הבריף המובנה בעזרת Claude.
+- `lib/rtm-brief.ts` - יצירת הבריף המובנה בעזרת Google Gemini (רמה חינמית, בלי כרטיס אשראי).
 - `lib/generate-rtm-briefs.ts` - הרצת הסבב המלא (שליפה → סינון → AI → שמירה).
 - `app/admin/rtm` - הפאנל להצגה, אישור ודחייה של בריפים.
 - `app/api/rtm/briefs` - אותו מידע כ-JSON מובנה (`GET`, מוגן ב-session
