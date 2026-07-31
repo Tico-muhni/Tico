@@ -99,7 +99,11 @@ ${OUTPUT_INSTRUCTIONS}`;
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 0.7,
-          maxOutputTokens: 800,
+          // The default Gemini Flash model "thinks" before answering, and that
+          // reasoning is billed against maxOutputTokens. A low budget (e.g.
+          // 800) gets consumed by thinking, truncating the JSON answer into
+          // invalid JSON. Give enough room for the thinking plus the output.
+          maxOutputTokens: 3000,
         },
       }),
       cache: "no-store",
