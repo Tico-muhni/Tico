@@ -22,6 +22,13 @@ const STATUS_LABEL: Record<RtmBriefView["status"], string> = {
   dismissed: "נדחה",
 };
 
+// Brand palette. Explicit colors (not theme variables) so the card looks the
+// same whether the phone is in light or dark mode.
+const GREEN = "#2E8B57";
+const GOLD = "#D4AF37";
+const NAVY = "#0F243E";
+const TEXT = "#1F2A37";
+
 export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
   const [isPending, startTransition] = useTransition();
 
@@ -34,80 +41,86 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
   return (
     <article
       className="overflow-hidden rounded-2xl border shadow-sm"
-      style={{ borderColor: "#0F243E22" }}
+      style={{ backgroundColor: "#ffffff", borderColor: "#E1E7E3" }}
     >
       <header
-        className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-white"
-        style={{ backgroundColor: "#0F243E" }}
+        className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
+        style={{ backgroundColor: GREEN }}
       >
         <div className="flex items-center gap-2 text-xs">
           <span
-            className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
-            style={{ backgroundColor: "#D4AF37", color: "#0F243E" }}
+            className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-extrabold"
+            style={{ backgroundColor: GOLD, color: NAVY }}
           >
             {brief.rank}
           </span>
           <span
-            className="rounded-full px-2.5 py-1 font-semibold"
-            style={{ backgroundColor: "#2E8B57" }}
+            className="rounded-full bg-white px-2.5 py-1 font-bold"
+            style={{ color: GREEN }}
           >
             {brief.source}
           </span>
           {brief.publishedAt && (
-            <span className="text-white/60">
+            <span className="text-white/80">
               {new Date(brief.publishedAt).toLocaleDateString("he-IL")}
             </span>
           )}
         </div>
         <span
-          className="rounded-full px-2.5 py-1 text-xs font-semibold"
+          className="rounded-full px-2.5 py-1 text-xs font-bold"
           style={{
             backgroundColor:
               brief.status === "approved"
-                ? "#2E8B57"
+                ? GOLD
                 : brief.status === "dismissed"
-                  ? "#ffffff22"
-                  : "#D4AF37",
-            color: brief.status === "dismissed" ? "#ffffff" : "#0F243E",
+                  ? "rgba(255,255,255,0.25)"
+                  : "rgba(255,255,255,0.9)",
+            color: brief.status === "dismissed" ? "#ffffff" : NAVY,
           }}
         >
           {STATUS_LABEL[brief.status]}
         </span>
       </header>
 
-      <div className="flex flex-col gap-4 bg-surface p-5">
+      <div className="flex flex-col gap-4 p-5">
         <a
           href={brief.url}
           target="_blank"
           rel="noreferrer"
-          className="text-sm font-semibold hover:underline"
-          style={{ color: "#0F243E" }}
+          className="text-sm font-bold leading-snug hover:underline"
+          style={{ color: NAVY }}
         >
           {brief.title}
         </a>
 
         <div>
-          <h3 className="mb-1 text-xs font-bold uppercase tracking-wide" style={{ color: "#2E8B57" }}>
+          <h3 className="mb-1 text-xs font-extrabold" style={{ color: GREEN }}>
             מה קרה
           </h3>
-          <p className="text-sm text-foreground">{brief.whatHappened}</p>
+          <p className="text-sm leading-relaxed" style={{ color: TEXT }}>
+            {brief.whatHappened}
+          </p>
+        </div>
+
+        <div className="rounded-xl p-4" style={{ backgroundColor: "#EAF6EF" }}>
+          <h3 className="mb-1 text-xs font-extrabold" style={{ color: GREEN }}>
+            מה זה אומר למחזיקי משכנתא
+          </h3>
+          <p className="text-sm leading-relaxed" style={{ color: TEXT }}>
+            {brief.meaningForMortgageHolders}
+          </p>
         </div>
 
         <div
-          className="rounded-xl p-4 text-sm"
-          style={{ backgroundColor: "#0F243E0d" }}
+          className="rounded-xl border-2 p-4"
+          style={{ borderColor: GOLD, backgroundColor: "#FCF8EC" }}
         >
-          <h3 className="mb-1 text-xs font-bold uppercase tracking-wide" style={{ color: "#0F243E" }}>
-            מה זה אומר למחזיקי משכנתא
-          </h3>
-          <p className="text-foreground">{brief.meaningForMortgageHolders}</p>
-        </div>
-
-        <div className="rounded-xl border-2 p-4 text-sm" style={{ borderColor: "#D4AF37" }}>
-          <h3 className="mb-1 text-xs font-bold uppercase tracking-wide" style={{ color: "#a8842a" }}>
+          <h3 className="mb-1 text-xs font-extrabold" style={{ color: "#A6801F" }}>
             שאלת סיום לסרטון
           </h3>
-          <p className="font-medium text-foreground">{brief.closingQuestion}</p>
+          <p className="text-sm font-semibold leading-relaxed" style={{ color: NAVY }}>
+            {brief.closingQuestion}
+          </p>
         </div>
 
         <div className="flex items-center gap-2 pt-1">
@@ -115,8 +128,8 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
             type="button"
             disabled={isPending || brief.status === "approved"}
             onClick={() => setStatus("approved")}
-            className="rounded-full px-4 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-            style={{ backgroundColor: "#2E8B57" }}
+            className="rounded-full px-4 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50"
+            style={{ backgroundColor: GREEN }}
           >
             אישור לסרטון
           </button>
@@ -124,8 +137,8 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
             type="button"
             disabled={isPending || brief.status === "dismissed"}
             onClick={() => setStatus("dismissed")}
-            className="rounded-full border px-4 py-1.5 text-sm font-medium hover:bg-black/5 disabled:opacity-50"
-            style={{ borderColor: "#0F243E33", color: "#0F243E" }}
+            className="rounded-full border px-4 py-2 text-sm font-medium hover:bg-black/5 disabled:opacity-50"
+            style={{ borderColor: "#CBD5D0", color: "#6B7280" }}
           >
             דחייה
           </button>

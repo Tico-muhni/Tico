@@ -48,58 +48,60 @@ export default async function RtmPage() {
   }));
 
   return (
-    <div className="min-h-full" style={{ backgroundColor: "#0F243E05" }}>
+    <div className="min-h-full" style={{ backgroundColor: "#EDF6F0" }}>
       <header
-        className="flex items-center justify-between px-6 py-4 text-white"
-        style={{ backgroundColor: "#0F243E" }}
+        className="flex items-center justify-between gap-3 px-5 py-4 text-white"
+        style={{ backgroundColor: "#2E8B57" }}
       >
         <div>
-          <h1 className="text-lg font-bold" style={{ color: "#D4AF37" }}>
-            RTM · 3 הכתבות של היום
+          <h1 className="text-lg font-extrabold text-white">
+            RTM · <span style={{ color: "#F2D888" }}>3 הכתבות של היום</span>
           </h1>
-          <p className="text-xs text-white/60">
-            סריקה יומית של חדשות מכל האינטרנט (Google News) בנושאי משכנתאות/ריבית/נדל&quot;ן
+          <p className="text-xs text-white/85">
+            חדשות מכל האינטרנט בנושאי משכנתאות · ריבית · נדל&quot;ן
           </p>
         </div>
-        <div className="flex items-center gap-3 text-xs text-white/60">
-          {session?.user?.email && <span>{session.user.email}</span>}
+        <div className="flex flex-col items-end gap-1 text-xs text-white/85">
+          {session?.user?.email && (
+            <span className="max-w-[9rem] truncate">{session.user.email}</span>
+          )}
           <form
             action={async () => {
               "use server";
               await signOut({ redirectTo: "/admin/login" });
             }}
           >
-            <button type="submit" className="hover:text-white">
+            <button type="submit" className="font-medium underline-offset-2 hover:underline">
               התנתקות
             </button>
           </form>
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-8">
+      <main className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6">
         <section
-          className="rounded-2xl border p-5"
-          style={{ borderColor: "#0F243E22", backgroundColor: "#ffffff" }}
+          className="rounded-2xl border p-5 shadow-sm"
+          style={{ borderColor: "#D5E5DC", backgroundColor: "#ffffff" }}
         >
           <GenerateRtmNowForm />
           {lastRun && (
-            <p className="mt-2 text-xs text-foreground/50">
+            <p className="mt-3 text-xs" style={{ color: "#5B6B62" }}>
               סריקה אחרונה: {lastRun.runAt.toLocaleString("he-IL")} ·{" "}
               {lastRun.status === "success"
-                ? `${lastRun.briefsGenerated} כתבות ריכוזיות מתוך ${lastRun.itemsFound} רלוונטיות שנמצאו`
+                ? `${lastRun.briefsGenerated} כתבות נבחרו מתוך ${lastRun.itemsFound} רלוונטיות`
                 : lastRun.status === "failed"
                   ? `נכשלה: ${lastRun.error ?? ""}`
                   : "רצה כרגע..."}
-              {lastRun.feedErrors.length > 0 && (
-                <> · אזהרות: {lastRun.feedErrors.join("; ")}</>
-              )}
             </p>
           )}
         </section>
 
         <section className="flex flex-col gap-4">
           {briefs.length === 0 && (
-            <p className="text-center text-sm text-foreground/50">
+            <p
+              className="rounded-2xl bg-white p-6 text-center text-sm shadow-sm"
+              style={{ color: "#5B6B62" }}
+            >
               אין עדיין בריפים. לחצו על &quot;סרוק חדשות עכשיו&quot; כדי לקבל
               את 3 הכתבות הראשונות.
             </p>
@@ -109,7 +111,7 @@ export default async function RtmPage() {
           ))}
         </section>
 
-        <p className="text-center text-xs text-foreground/40">
+        <p className="text-center text-xs" style={{ color: "#8A968F" }}>
           הפלט המובנה זמין גם ב-JSON תחת{" "}
           <code dir="ltr">/api/rtm/briefs</code>
         </p>
