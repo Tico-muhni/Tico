@@ -12,7 +12,7 @@ export default function RegisterPage() {
         <h1 className="mb-1 text-center text-xl font-extrabold" style={{ color: "#2E8B57" }}>
           הרשמה ל-Tico RTM
         </h1>
-        <p className="mb-6 text-center text-xs text-foreground/60">
+        <p className="mb-6 text-center text-xs" style={{ color: "#5B6B62" }}>
           כלי יומי שסורק חדשות משכנתאות/נדל&quot;ן ומכין בריפים לסרטונים.
         </p>
         <RegisterForm requireCode={requireCode} />

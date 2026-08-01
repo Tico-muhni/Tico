@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { rtmBriefs, rtmNewsItems, rtmRuns } from "@/drizzle/schema";
+import { ownerEmail } from "../users/owner";
 import GenerateRtmNowForm from "./generate-now-form";
 import RtmBriefCard, { type RtmBriefView } from "./brief-card";
 import CandidateRow, { type CandidateView } from "./candidate-row";
@@ -9,6 +11,7 @@ import CandidateRow, { type CandidateView } from "./candidate-row";
 export default async function RtmPage() {
   const session = await auth();
   const userId = session?.user?.id;
+  const isOwner = session?.user?.email?.toLowerCase() === ownerEmail();
 
   // Only show this advisor's latest scan - each new scan replaces the board, so
   // there's no history to scroll past. Each item is either a candidate to brief
@@ -91,6 +94,14 @@ export default async function RtmPage() {
         <div className="flex flex-col items-end gap-1 text-xs text-white/85">
           {session?.user?.email && (
             <span className="max-w-[9rem] truncate">{session.user.email}</span>
+          )}
+          {isOwner && (
+            <Link
+              href="/admin/users"
+              className="font-medium underline-offset-2 hover:underline"
+            >
+              מערכת בקרה
+            </Link>
           )}
           <form
             action={async () => {
