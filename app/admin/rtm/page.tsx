@@ -1,51 +1,64 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { rtmBriefs, rtmNewsItems, rtmRuns } from "@/drizzle/schema";
+import { rtmBriefs, rtmNewsItems } from "@/drizzle/schema";
 import GenerateRtmNowForm from "./generate-now-form";
 import RtmBriefCard, { type RtmBriefView } from "./brief-card";
+import CandidateRow, { type CandidateView } from "./candidate-row";
 
 export default async function RtmPage() {
   const session = await auth();
 
-  const [lastRun] = await db
-    .select()
-    .from(rtmRuns)
-    .orderBy(desc(rtmRuns.runAt))
-    .limit(1);
+  // Show recently-scanned articles (last 5 days). Each either already has a
+  // brief (full card) or is a candidate the user can turn into a brief.
+  const rows = await db
+    .select({
+      newsItemId: rtmNewsItems.id,
+      source: rtmNewsItems.source,
+      title: rtmNewsItems.title,
+      url: rtmNewsItems.url,
+      publishedAt: rtmNewsItems.publishedAt,
+      fetchedAt: rtmNewsItems.fetchedAt,
+      briefId: rtmBriefs.id,
+      status: rtmBriefs.status,
+      whatHappened: rtmBriefs.whatHappened,
+      meaningForMortgageHolders: rtmBriefs.meaningForMortgageHolders,
+      closingQuestion: rtmBriefs.closingQuestion,
+    })
+    .from(rtmNewsItems)
+    .leftJoin(rtmBriefs, eq(rtmBriefs.newsItemId, rtmNewsItems.id))
+    .where(sql`${rtmNewsItems.fetchedAt} >= now() - interval '5 days'`)
+    .orderBy(desc(rtmNewsItems.publishedAt))
+    .limit(40);
 
-  const rows = lastRun
-    ? await db
-        .select({
-          id: rtmBriefs.id,
-          rank: rtmBriefs.rank,
-          status: rtmBriefs.status,
-          whatHappened: rtmBriefs.whatHappened,
-          meaningForMortgageHolders: rtmBriefs.meaningForMortgageHolders,
-          closingQuestion: rtmBriefs.closingQuestion,
-          source: rtmNewsItems.source,
-          title: rtmNewsItems.title,
-          url: rtmNewsItems.url,
-          publishedAt: rtmNewsItems.publishedAt,
-        })
-        .from(rtmBriefs)
-        .innerJoin(rtmNewsItems, eq(rtmBriefs.newsItemId, rtmNewsItems.id))
-        .where(eq(rtmNewsItems.runId, lastRun.id))
-        .orderBy(asc(rtmBriefs.rank))
-    : [];
+  const briefs: RtmBriefView[] = [];
+  const candidates: CandidateView[] = [];
 
-  const briefs: RtmBriefView[] = rows.map((row) => ({
-    id: row.id,
-    rank: row.rank,
-    source: row.source,
-    title: row.title,
-    url: row.url,
-    publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
-    whatHappened: row.whatHappened,
-    meaningForMortgageHolders: row.meaningForMortgageHolders,
-    closingQuestion: row.closingQuestion,
-    status: row.status,
-  }));
+  for (const row of rows) {
+    const publishedAt = row.publishedAt ? row.publishedAt.toISOString() : null;
+    if (row.briefId && row.whatHappened) {
+      briefs.push({
+        id: row.briefId,
+        rank: 1,
+        source: row.source,
+        title: row.title,
+        url: row.url,
+        publishedAt,
+        whatHappened: row.whatHappened,
+        meaningForMortgageHolders: row.meaningForMortgageHolders ?? "",
+        closingQuestion: row.closingQuestion ?? "",
+        status: row.status ?? "new",
+      });
+    } else {
+      candidates.push({
+        id: row.newsItemId,
+        source: row.source,
+        title: row.title,
+        url: row.url,
+        publishedAt,
+      });
+    }
+  }
 
   return (
     <div className="min-h-full" style={{ backgroundColor: "#EDF6F0" }}>
@@ -55,7 +68,7 @@ export default async function RtmPage() {
       >
         <div>
           <h1 className="text-lg font-extrabold text-white">
-            RTM · <span style={{ color: "#F2D888" }}>3 הכתבות של היום</span>
+            RTM · <span style={{ color: "#F2D888" }}>חדשות היום</span>
           </h1>
           <p className="text-xs text-white/85">
             חדשות מכל האינטרנט בנושאי משכנתאות · ריבית · נדל&quot;ן
@@ -84,32 +97,43 @@ export default async function RtmPage() {
           style={{ borderColor: "#D5E5DC", backgroundColor: "#ffffff" }}
         >
           <GenerateRtmNowForm />
-          {lastRun && (
-            <p className="mt-3 text-xs" style={{ color: "#5B6B62" }}>
-              סריקה אחרונה: {lastRun.runAt.toLocaleString("he-IL")} ·{" "}
-              {lastRun.status === "success"
-                ? `${lastRun.briefsGenerated} כתבות נבחרו מתוך ${lastRun.itemsFound} רלוונטיות`
-                : lastRun.status === "failed"
-                  ? `נכשלה: ${lastRun.error ?? ""}`
-                  : "רצה כרגע..."}
-            </p>
-          )}
+          <p className="mt-3 text-xs" style={{ color: "#5B6B62" }}>
+            הסריקה חינמית ובלי הגבלה. בחרו כתבה ולחצו &quot;צור בריף&quot; כדי
+            שה-AI יכתוב לה בריף לסרטון.
+          </p>
         </section>
 
-        <section className="flex flex-col gap-4">
-          {briefs.length === 0 && (
-            <p
-              className="rounded-2xl bg-white p-6 text-center text-sm shadow-sm"
-              style={{ color: "#5B6B62" }}
-            >
-              אין עדיין בריפים. לחצו על &quot;סרוק חדשות עכשיו&quot; כדי לקבל
-              את 3 הכתבות הראשונות.
-            </p>
-          )}
-          {briefs.map((brief) => (
-            <RtmBriefCard key={brief.id} brief={brief} />
-          ))}
-        </section>
+        {briefs.length === 0 && candidates.length === 0 && (
+          <p
+            className="rounded-2xl bg-white p-6 text-center text-sm shadow-sm"
+            style={{ color: "#5B6B62" }}
+          >
+            אין עדיין כתבות. לחצו על &quot;סרוק חדשות עכשיו&quot; כדי למצוא
+            כתבות עדכניות.
+          </p>
+        )}
+
+        {briefs.length > 0 && (
+          <section className="flex flex-col gap-4">
+            <h2 className="text-sm font-extrabold" style={{ color: "#0F243E" }}>
+              הבריפים שלך ({briefs.length})
+            </h2>
+            {briefs.map((brief) => (
+              <RtmBriefCard key={brief.id} brief={brief} />
+            ))}
+          </section>
+        )}
+
+        {candidates.length > 0 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-sm font-extrabold" style={{ color: "#0F243E" }}>
+              כתבות שנמצאו — בחרו למי ליצור בריף ({candidates.length})
+            </h2>
+            {candidates.map((candidate) => (
+              <CandidateRow key={candidate.id} candidate={candidate} />
+            ))}
+          </section>
+        )}
 
         <p className="text-center text-xs" style={{ color: "#8A968F" }}>
           הפלט המובנה זמין גם ב-JSON תחת{" "}
