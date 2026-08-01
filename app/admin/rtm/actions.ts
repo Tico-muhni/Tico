@@ -15,12 +15,16 @@ export async function generateRtmNowAction(): Promise<ActionResult> {
 
     const warnings =
       result.feedErrors.length > 0
-        ? ` (שימו לב: ${result.feedErrors.join("; ")})`
+        ? ` · שימו לב: ${result.feedErrors.join("; ")}`
         : "";
+
+    // Breakdown so a "0 new" result is explainable (already-seen vs off-topic
+    // vs foreign source vs genuinely nothing new).
+    const breakdown = `נמשכו ${result.fetched} כתבות · ${result.alreadySeen} כבר נסרקו · ${result.offTopic} לא בנושא · ${result.foreign} מקור זר`;
 
     return {
       error: null,
-      success: `נמצאו ${result.itemsFound} ידיעות רלוונטיות חדשות, נוצרו ${result.briefsGenerated} בריפים.${warnings}`,
+      success: `${result.itemsFound} כתבות חדשות רלוונטיות, נוצרו ${result.briefsGenerated} בריפים. (${breakdown})${warnings}`,
     };
   } catch (err) {
     return {

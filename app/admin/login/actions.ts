@@ -9,7 +9,7 @@ export async function loginAction(
 ): Promise<{ error: string | null }> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
-  const callbackUrl = String(formData.get("callbackUrl") ?? "/admin/drafts");
+  const callbackUrl = String(formData.get("callbackUrl") ?? "/admin/rtm");
 
   try {
     await signIn("credentials", {
