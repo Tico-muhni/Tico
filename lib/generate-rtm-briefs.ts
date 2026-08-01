@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { rtmNewsItems, rtmBriefs, rtmRuns } from "@/drizzle/schema";
 import {
@@ -47,37 +47,18 @@ export async function scanForCandidates(maxCandidates = MAX_CANDIDATES) {
   const [run] = await db.insert(rtmRuns).values({ status: "running" }).returning();
 
   try {
-    const existing = await db.select({ url: rtmNewsItems.url }).from(rtmNewsItems);
-    const existingUrls = new Set(existing.map((row) => row.url));
-
     const byUrl = new Map<string, Candidate>();
     const feedErrors: string[] = [];
-
-    let fetched = 0;
-    let alreadySeen = 0;
-    let offTopic = 0;
-    let foreign = 0;
 
     for (const q of RTM_SEARCH_QUERIES) {
       try {
         const items = await fetchRssItems(googleNewsRssUrl(q.query));
         for (const item of items) {
-          fetched += 1;
           if (byUrl.has(item.link)) continue; // duplicate across queries
-          if (existingUrls.has(item.link)) {
-            alreadySeen += 1;
-            continue;
-          }
           const haystack = `${item.title} ${item.description ?? ""}`;
           const matchedKeywords = textMatchesKeywords(haystack);
-          if (matchedKeywords.length === 0) {
-            offTopic += 1;
-            continue;
-          }
-          if (!isIsraeliSource(item.sourceUrl)) {
-            foreign += 1;
-            continue;
-          }
+          if (matchedKeywords.length === 0) continue;
+          if (!isIsraeliSource(item.sourceUrl)) continue;
 
           byUrl.set(item.link, {
             source: item.source ?? "Google News",
@@ -103,9 +84,12 @@ export async function scanForCandidates(maxCandidates = MAX_CANDIDATES) {
       .sort((a, b) => b.score - a.score)
       .slice(0, maxCandidates);
 
+    // Upsert each of the current top articles onto THIS run. An article seen in
+    // a previous scan is moved to the new run (its brief, if any, stays), so the
+    // board always shows just the latest scan's articles - no history to scroll.
     let stored = 0;
     for (const { candidate, parsedDate } of ranked) {
-      const [row] = await db
+      await db
         .insert(rtmNewsItems)
         .values({
           runId: run.id,
@@ -116,30 +100,24 @@ export async function scanForCandidates(maxCandidates = MAX_CANDIDATES) {
           publishedAt: parsedDate,
           matchedKeywords: candidate.matchedKeywords,
         })
-        .onConflictDoNothing()
-        .returning();
-      if (row) stored += 1;
+        .onConflictDoUpdate({
+          target: rtmNewsItems.url,
+          set: { runId: run.id, fetchedAt: sql`now()` },
+        });
+      stored += 1;
     }
 
     await db
       .update(rtmRuns)
       .set({
         status: "success",
-        itemsFound: byUrl.size,
+        itemsFound: ranked.length,
         briefsGenerated: 0,
         feedErrors,
       })
       .where(eq(rtmRuns.id, run.id));
 
-    return {
-      stored,
-      candidatesFound: byUrl.size,
-      feedErrors,
-      fetched,
-      alreadySeen,
-      offTopic,
-      foreign,
-    };
+    return { stored, candidatesFound: ranked.length, feedErrors };
   } catch (err) {
     await db
       .update(rtmRuns)

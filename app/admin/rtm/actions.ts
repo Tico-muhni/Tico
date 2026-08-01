@@ -16,17 +16,16 @@ export async function scanNewsAction(): Promise<ActionResult> {
     const result = await scanForCandidates();
     revalidatePath("/admin/rtm");
 
-    if (result.stored === 0) {
-      const note =
-        result.candidatesFound > 0
-          ? "כל הכתבות הרלוונטיות כבר הופיעו בסריקה קודמת."
-          : "לא נמצאו כתבות חדשות בנושא כרגע — נסו שוב מאוחר יותר.";
-      return { error: null, success: `לא נוספו כתבות חדשות. ${note}` };
+    if (result.candidatesFound === 0) {
+      return {
+        error: null,
+        success: "לא נמצאו כתבות רלוונטיות כרגע — נסו שוב מאוחר יותר.",
+      };
     }
 
     return {
       error: null,
-      success: `נמצאו ${result.stored} כתבות חדשות — בחרו מהן ולחצו "צור בריף".`,
+      success: `נמצאו ${result.candidatesFound} כתבות — בחרו מהן ולחצו "צור בריף".`,
     };
   } catch (err) {
     return {

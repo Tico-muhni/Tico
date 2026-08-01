@@ -1,7 +1,7 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { rtmBriefs, rtmNewsItems } from "@/drizzle/schema";
+import { rtmBriefs, rtmNewsItems, rtmRuns } from "@/drizzle/schema";
 import GenerateRtmNowForm from "./generate-now-form";
 import RtmBriefCard, { type RtmBriefView } from "./brief-card";
 import CandidateRow, { type CandidateView } from "./candidate-row";
@@ -9,27 +9,34 @@ import CandidateRow, { type CandidateView } from "./candidate-row";
 export default async function RtmPage() {
   const session = await auth();
 
-  // Show recently-scanned articles (last 5 days). Each either already has a
-  // brief (full card) or is a candidate the user can turn into a brief.
-  const rows = await db
-    .select({
-      newsItemId: rtmNewsItems.id,
-      source: rtmNewsItems.source,
-      title: rtmNewsItems.title,
-      url: rtmNewsItems.url,
-      publishedAt: rtmNewsItems.publishedAt,
-      fetchedAt: rtmNewsItems.fetchedAt,
-      briefId: rtmBriefs.id,
-      status: rtmBriefs.status,
-      whatHappened: rtmBriefs.whatHappened,
-      meaningForMortgageHolders: rtmBriefs.meaningForMortgageHolders,
-      closingQuestion: rtmBriefs.closingQuestion,
-    })
-    .from(rtmNewsItems)
-    .leftJoin(rtmBriefs, eq(rtmBriefs.newsItemId, rtmNewsItems.id))
-    .where(sql`${rtmNewsItems.fetchedAt} >= now() - interval '5 days'`)
-    .orderBy(desc(rtmNewsItems.publishedAt))
-    .limit(40);
+  // Only show the latest scan's articles - each new scan replaces the board, so
+  // there's no history to scroll past. Each is either a candidate to brief or a
+  // brief already made.
+  const [lastRun] = await db
+    .select({ id: rtmRuns.id })
+    .from(rtmRuns)
+    .orderBy(desc(rtmRuns.runAt))
+    .limit(1);
+
+  const rows = lastRun
+    ? await db
+        .select({
+          newsItemId: rtmNewsItems.id,
+          source: rtmNewsItems.source,
+          title: rtmNewsItems.title,
+          url: rtmNewsItems.url,
+          publishedAt: rtmNewsItems.publishedAt,
+          briefId: rtmBriefs.id,
+          status: rtmBriefs.status,
+          whatHappened: rtmBriefs.whatHappened,
+          meaningForMortgageHolders: rtmBriefs.meaningForMortgageHolders,
+          closingQuestion: rtmBriefs.closingQuestion,
+        })
+        .from(rtmNewsItems)
+        .leftJoin(rtmBriefs, eq(rtmBriefs.newsItemId, rtmNewsItems.id))
+        .where(eq(rtmNewsItems.runId, lastRun.id))
+        .orderBy(desc(rtmNewsItems.publishedAt))
+    : [];
 
   const briefs: RtmBriefView[] = [];
   const candidates: CandidateView[] = [];
