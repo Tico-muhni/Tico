@@ -6,7 +6,21 @@ import {
   integer,
   boolean,
   pgEnum,
+  unique,
 } from "drizzle-orm/pg-core";
+
+// Registered advisors. Each has their own login and their own Gemini API key,
+// so the AI briefs they generate run on their own (free) quota.
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  name: text("name"),
+  geminiApiKey: text("gemini_api_key"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 export const topicStatusEnum = pgEnum("topic_status", [
   "pending",
@@ -206,6 +220,7 @@ export const imageTemplates = pgTable("image_templates", {
 
 export const rtmRuns = pgTable("rtm_runs", {
   id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
   runAt: timestamp("run_at", { withTimezone: true }).notNull().defaultNow(),
   itemsFound: integer("items_found").notNull().default(0),
   briefsGenerated: integer("briefs_generated").notNull().default(0),
@@ -214,24 +229,32 @@ export const rtmRuns = pgTable("rtm_runs", {
   error: text("error"),
 });
 
-export const rtmNewsItems = pgTable("rtm_news_items", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  runId: uuid("run_id").references(() => rtmRuns.id, { onDelete: "set null" }),
-  // Publisher name (free text), e.g. "Ynet", "גלובס", "כלכליסט", "TheMarker".
-  // Not an enum, because Google News search returns items from many sources.
-  source: text("source").notNull(),
-  title: text("title").notNull(),
-  url: text("url").notNull().unique(),
-  summary: text("summary"),
-  publishedAt: timestamp("published_at", { withTimezone: true }),
-  matchedKeywords: text("matched_keywords").array().notNull().default([]),
-  fetchedAt: timestamp("fetched_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const rtmNewsItems = pgTable(
+  "rtm_news_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    runId: uuid("run_id").references(() => rtmRuns.id, { onDelete: "set null" }),
+    // Publisher name (free text), e.g. "Ynet", "גלובס", "כלכליסט", "TheMarker".
+    // Not an enum, because Google News search returns items from many sources.
+    source: text("source").notNull(),
+    title: text("title").notNull(),
+    url: text("url").notNull(),
+    summary: text("summary"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    matchedKeywords: text("matched_keywords").array().notNull().default([]),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  // The same article URL can be scanned by different advisors, so uniqueness is
+  // per-user, not global.
+  (t) => [unique("rtm_news_items_user_url_unique").on(t.userId, t.url)]
+);
 
 export const rtmBriefs = pgTable("rtm_briefs", {
   id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
   newsItemId: uuid("news_item_id")
     .notNull()
     .unique()

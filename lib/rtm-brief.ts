@@ -63,15 +63,20 @@ function extractJson(text: string): GeneratedRtmBrief {
   return parsed as GeneratedRtmBrief;
 }
 
-export async function generateRtmBrief(newsItem: {
-  source: string;
-  title: string;
-  summary: string | null;
-}): Promise<GeneratedRtmBrief> {
-  const apiKey = process.env.GEMINI_API_KEY;
+export async function generateRtmBrief(
+  newsItem: {
+    source: string;
+    title: string;
+    summary: string | null;
+  },
+  // Each advisor supplies their own Gemini key at registration, so briefs run
+  // on their own quota. Falls back to a shared env key if provided.
+  apiKeyOverride?: string | null
+): Promise<GeneratedRtmBrief> {
+  const apiKey = apiKeyOverride || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error(
-      "GEMINI_API_KEY is not set. Add it to your environment (see SETUP.md - it's free, no credit card)."
+      "אין מפתח Gemini. הוסיפו מפתח בהרשמה (חינמי, בלי כרטיס אשראי)."
     );
   }
 

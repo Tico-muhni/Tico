@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { users } from "@/drizzle/schema";
 import { scanForCandidates } from "@/lib/generate-rtm-briefs";
 
 export const maxDuration = 60;
@@ -15,13 +17,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  try {
-    const result = await scanForCandidates();
-    return NextResponse.json({ ok: true, ...result });
-  } catch (err) {
-    return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : String(err) },
-      { status: 500 }
-    );
+  // Scanning is free (no AI), so refresh every advisor's candidate list daily.
+  const allUsers = await db.select({ id: users.id }).from(users);
+  const results: { userId: string; ok: boolean; error?: string }[] = [];
+
+  for (const user of allUsers) {
+    try {
+      await scanForCandidates(user.id);
+      results.push({ userId: user.id, ok: true });
+    } catch (err) {
+      results.push({
+        userId: user.id,
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
+
+  return NextResponse.json({ ok: true, scanned: results.length, results });
 }
