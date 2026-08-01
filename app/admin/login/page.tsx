@@ -18,7 +18,7 @@ export default async function LoginPage({
           כניסה ל-Tico RTM
         </h1>
         <LoginForm callbackUrl={callbackUrl ?? "/admin/rtm"} />
-        <p className="mt-4 text-center text-xs text-foreground/60">
+        <p className="mt-4 text-center text-xs" style={{ color: "#5B6B62" }}>
           עדיין אין לך חשבון?{" "}
           <Link href="/register" className="font-semibold underline" style={{ color: "#2E8B57" }}>
             הרשמה
