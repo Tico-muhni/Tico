@@ -69,20 +69,44 @@ export default function RegisterForm({ requireCode }: { requireCode: boolean }) 
           style={{ color: TEXT }}
           className="rounded-lg border border-black/10 px-3 py-2 text-left outline-none focus:border-[#2E8B57]"
         />
-        <span className="text-xs" style={{ color: HELP }}>
-          יוצרים מפתח בחינם ב-{" "}
-          <a
-            href="https://aistudio.google.com/apikey"
-            target="_blank"
-            rel="noreferrer"
-            className="font-semibold underline"
-            style={{ color: GREEN }}
-          >
-            Google AI Studio
-          </a>{" "}
-          → &quot;Create API key&quot;. ה-AI שכותב את הבריפים ירוץ על החשבון שלך.
-        </span>
       </label>
+
+      <details
+        className="rounded-xl border p-3 text-xs"
+        style={{ borderColor: "#D5E5DC", backgroundColor: "#F4FAF6", color: HELP }}
+      >
+        <summary className="cursor-pointer font-bold" style={{ color: GREEN }}>
+          איך משיגים מפתח Gemini? (חינם, דקה) ▾
+        </summary>
+        <ol className="mt-2 flex list-decimal flex-col gap-1.5 pr-4">
+          <li>
+            נכנסים ל-{" "}
+            <a
+              href="https://aistudio.google.com/apikey"
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold underline"
+              style={{ color: GREEN }}
+            >
+              Google AI Studio ↗
+            </a>{" "}
+            (מתחברים עם חשבון הגוגל).
+          </li>
+          <li>
+            לוחצים על <b style={{ color: TEXT }}>&quot;Create API key&quot;</b>{" "}
+            (צור מפתח).
+          </li>
+          <li>
+            מעתיקים את המחרוזת שמתחילה ב-<b dir="ltr" style={{ color: TEXT }}>AIza...</b>{" "}
+            (יש כפתור העתקה 📋 לידה).
+          </li>
+          <li>מדביקים אותה בשדה למעלה. זהו! 🎉</li>
+        </ol>
+        <p className="mt-2">
+          חינם לגמרי, בלי כרטיס אשראי. ה-AI שכותב את הבריפים ירוץ על החשבון שלך,
+          כדי שהמכסה נשארת שלך.
+        </p>
+      </details>
 
       {requireCode && (
         <label className="flex flex-col gap-1 text-sm font-medium" style={{ color: TEXT }}>
