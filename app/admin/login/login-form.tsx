@@ -17,7 +17,7 @@ export default function LoginForm({ callbackUrl }: { callbackUrl: string }) {
           type="email"
           name="email"
           required
-          className="rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-secondary"
+          className="rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-[#2E8B57]"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm">
@@ -26,18 +26,19 @@ export default function LoginForm({ callbackUrl }: { callbackUrl: string }) {
           type="password"
           name="password"
           required
-          className="rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-secondary"
+          className="rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-[#2E8B57]"
         />
       </label>
       {state.error && (
-        <p className="text-sm text-button" role="alert">
+        <p className="text-sm text-red-600" role="alert">
           {state.error}
         </p>
       )}
       <button
         type="submit"
         disabled={pending}
-        className="mt-2 rounded-full bg-button px-4 py-2 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="mt-2 rounded-full px-4 py-2 font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        style={{ backgroundColor: "#2E8B57" }}
       >
         {pending ? "מתחבר..." : "התחברות"}
       </button>
