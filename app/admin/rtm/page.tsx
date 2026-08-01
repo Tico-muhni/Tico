@@ -138,17 +138,6 @@ export default async function RtmPage() {
           </p>
         )}
 
-        {candidates.length > 0 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-extrabold" style={{ color: "#0F243E" }}>
-              כתבות שנמצאו — בחרו למי ליצור בריף ({candidates.length})
-            </h2>
-            {candidates.map((candidate) => (
-              <CandidateRow key={candidate.id} candidate={candidate} />
-            ))}
-          </section>
-        )}
-
         {briefs.length > 0 && (
           <section className="flex flex-col gap-4">
             <h2 className="text-sm font-extrabold" style={{ color: "#0F243E" }}>
@@ -156,6 +145,17 @@ export default async function RtmPage() {
             </h2>
             {briefs.map((brief) => (
               <RtmBriefCard key={brief.id} brief={brief} />
+            ))}
+          </section>
+        )}
+
+        {candidates.length > 0 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-sm font-extrabold" style={{ color: "#0F243E" }}>
+              כתבות שנמצאו — בחרו למי ליצור בריף ({candidates.length})
+            </h2>
+            {candidates.map((candidate) => (
+              <CandidateRow key={candidate.id} candidate={candidate} />
             ))}
           </section>
         )}
