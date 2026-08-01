@@ -54,12 +54,17 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
           >
             {brief.rank}
           </span>
-          <span
-            className="rounded-full bg-white px-2.5 py-1 font-bold"
+          <a
+            href={brief.url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 font-bold hover:opacity-90"
             style={{ color: GREEN }}
+            title="פתח את הכתבה המקורית"
           >
             {brief.source}
-          </span>
+            <span aria-hidden="true">↗</span>
+          </a>
           {brief.publishedAt && (
             <span className="text-white/80">
               {new Date(brief.publishedAt).toLocaleDateString("he-IL")}
@@ -142,6 +147,16 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
           >
             דחייה
           </button>
+          <a
+            href={brief.url}
+            target="_blank"
+            rel="noreferrer"
+            className="mr-auto flex items-center gap-1 rounded-full border px-4 py-2 text-sm font-bold hover:bg-black/5"
+            style={{ borderColor: GREEN, color: GREEN }}
+          >
+            לכתבה המקורית
+            <span aria-hidden="true">↗</span>
+          </a>
         </div>
       </div>
     </article>
