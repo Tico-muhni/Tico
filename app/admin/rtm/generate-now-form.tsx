@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { generateRtmNowAction } from "./actions";
+import { scanNewsAction } from "./actions";
 
 export default function GenerateRtmNowForm() {
   const [isPending, startTransition] = useTransition();
@@ -12,7 +12,7 @@ export default function GenerateRtmNowForm() {
 
   function handleClick() {
     startTransition(async () => {
-      const result = await generateRtmNowAction();
+      const result = await scanNewsAction();
       setState(result);
     });
   }

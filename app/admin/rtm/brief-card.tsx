@@ -48,12 +48,6 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
         style={{ backgroundColor: GREEN }}
       >
         <div className="flex items-center gap-2 text-xs">
-          <span
-            className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-extrabold"
-            style={{ backgroundColor: GOLD, color: NAVY }}
-          >
-            {brief.rank}
-          </span>
           <a
             href={brief.url}
             target="_blank"

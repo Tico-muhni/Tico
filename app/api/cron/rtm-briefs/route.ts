@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runRtmBriefGeneration } from "@/lib/generate-rtm-briefs";
+import { scanForCandidates } from "@/lib/generate-rtm-briefs";
 
 export const maxDuration = 60;
 
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await runRtmBriefGeneration();
+    const result = await scanForCandidates();
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     return NextResponse.json(
