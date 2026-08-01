@@ -50,17 +50,34 @@ export async function runRtmBriefGeneration(dailyCount = DAILY_BRIEF_COUNT) {
     const byUrl = new Map<string, Candidate>();
     const feedErrors: string[] = [];
 
+    // Diagnostics: count where items drop out, so a "0 new" result is explainable.
+    let fetched = 0;
+    let alreadySeen = 0;
+    let offTopic = 0;
+    let foreign = 0;
+
     // Search Google News for each topic and collect on-topic, not-yet-seen items.
     for (const q of RTM_SEARCH_QUERIES) {
       try {
         const items = await fetchRssItems(googleNewsRssUrl(q.query));
         for (const item of items) {
-          if (existingUrls.has(item.link) || byUrl.has(item.link)) continue;
-          // Keep only genuine Israeli publishers (skip foreign aggregators).
-          if (!isIsraeliSource(item.sourceUrl)) continue;
+          fetched += 1;
+          if (byUrl.has(item.link)) continue; // duplicate across queries
+          if (existingUrls.has(item.link)) {
+            alreadySeen += 1;
+            continue;
+          }
           const haystack = `${item.title} ${item.description ?? ""}`;
           const matchedKeywords = textMatchesKeywords(haystack);
-          if (matchedKeywords.length === 0) continue;
+          if (matchedKeywords.length === 0) {
+            offTopic += 1;
+            continue;
+          }
+          // Keep only genuine Israeli publishers (skip foreign aggregators).
+          if (!isIsraeliSource(item.sourceUrl)) {
+            foreign += 1;
+            continue;
+          }
 
           byUrl.set(item.link, {
             source: item.source ?? "Google News",
@@ -149,7 +166,15 @@ export async function runRtmBriefGeneration(dailyCount = DAILY_BRIEF_COUNT) {
       })
       .where(eq(rtmRuns.id, run.id));
 
-    return { itemsFound: candidates.length, briefsGenerated, feedErrors };
+    return {
+      itemsFound: candidates.length,
+      briefsGenerated,
+      feedErrors,
+      fetched,
+      alreadySeen,
+      offTopic,
+      foreign,
+    };
   } catch (err) {
     await db
       .update(rtmRuns)

@@ -9,14 +9,17 @@ export type RtmQuery = {
 };
 
 // Each query becomes a Google News RSS search. Hebrew, Israel edition.
+// Kept simple (short phrases, no OR/quote operators) so Google News returns
+// solid result sets - the keyword filter below refines relevance afterward.
 export const RTM_SEARCH_QUERIES: RtmQuery[] = [
-  { label: "משכנתאות", query: 'משכנתא OR "מיחזור משכנתא" OR "החזר חודשי"' },
-  { label: "ריבית", query: '"ריבית בנק ישראל" OR "ריבית הפריים" OR "הריבית במשק"' },
-  { label: "נדל״ן ודיור", query: '"מחירי דירות" OR "שוק הנדל\\"ן" OR "שוק הדיור" OR "רוכשי דירה"' },
+  { label: "משכנתאות", query: "משכנתא" },
+  { label: "ריבית", query: "ריבית בנק ישראל" },
+  { label: "מחירי דיור", query: "מחירי דירות" },
+  { label: "שוק הנדל״ן", query: "שוק הנדלן" },
 ];
 
 // Restrict each search to recent items so the daily brief stays timely.
-const RECENCY = "when:5d";
+const RECENCY = "when:7d";
 
 export function googleNewsRssUrl(query: string): string {
   const q = encodeURIComponent(`${query} ${RECENCY}`);
