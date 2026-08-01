@@ -13,18 +13,25 @@ export async function generateRtmNowAction(): Promise<ActionResult> {
     const result = await runRtmBriefGeneration();
     revalidatePath("/admin/rtm");
 
-    const warnings =
-      result.feedErrors.length > 0
-        ? ` · שימו לב: ${result.feedErrors.join("; ")}`
-        : "";
+    // Turn the raw feed/AI errors into one short, human note - never dump the
+    // raw API error text into the UI.
+    const errorsText = result.feedErrors.join(" ").toLowerCase();
+    const quotaHit =
+      errorsText.includes("429") ||
+      errorsText.includes("quota") ||
+      errorsText.includes("resource_exhausted");
 
-    // Breakdown so a "0 new" result is explainable (already-seen vs off-topic
-    // vs foreign source vs genuinely nothing new).
-    const breakdown = `נמשכו ${result.fetched} כתבות · ${result.alreadySeen} כבר נסרקו · ${result.offTopic} לא בנושא · ${result.foreign} מקור זר`;
+    let note = "";
+    if (quotaHit) {
+      note =
+        " המכסה היומית החינמית של ה-AI נוצלה, אז חלק מהבריפים לא נוצרו — המכסה מתאפסת כל יום, נסו שוב מאוחר יותר או מחר.";
+    } else if (result.feedErrors.length > 0) {
+      note = " חלק מהבריפים לא נוצרו בגלל תקלה זמנית — אפשר לנסות שוב.";
+    }
 
     return {
       error: null,
-      success: `${result.itemsFound} כתבות חדשות רלוונטיות, נוצרו ${result.briefsGenerated} בריפים. (${breakdown})${warnings}`,
+      success: `נמצאו ${result.itemsFound} כתבות רלוונטיות, נוצרו ${result.briefsGenerated} בריפים.${note}`,
     };
   } catch (err) {
     return {
