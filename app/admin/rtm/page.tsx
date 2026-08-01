@@ -8,15 +8,19 @@ import CandidateRow, { type CandidateView } from "./candidate-row";
 
 export default async function RtmPage() {
   const session = await auth();
+  const userId = session?.user?.id;
 
-  // Only show the latest scan's articles - each new scan replaces the board, so
-  // there's no history to scroll past. Each is either a candidate to brief or a
-  // brief already made.
-  const [lastRun] = await db
-    .select({ id: rtmRuns.id })
-    .from(rtmRuns)
-    .orderBy(desc(rtmRuns.runAt))
-    .limit(1);
+  // Only show this advisor's latest scan - each new scan replaces the board, so
+  // there's no history to scroll past. Each item is either a candidate to brief
+  // or a brief already made.
+  const [lastRun] = userId
+    ? await db
+        .select({ id: rtmRuns.id })
+        .from(rtmRuns)
+        .where(eq(rtmRuns.userId, userId))
+        .orderBy(desc(rtmRuns.runAt))
+        .limit(1)
+    : [];
 
   const rows = lastRun
     ? await db

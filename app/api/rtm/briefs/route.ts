@@ -1,33 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { desc, asc, eq } from "drizzle-orm";
+import { and, desc, asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { rtmBriefs, rtmNewsItems, rtmRuns } from "@/drizzle/schema";
 import { auth } from "@/lib/auth";
 
-function isAuthorized(req: NextRequest, hasSession: boolean) {
-  if (hasSession) return true;
-  const secret = process.env.RTM_API_SECRET;
-  if (!secret) return false;
-  const authHeader = req.headers.get("authorization");
-  return authHeader === `Bearer ${secret}`;
-}
-
 export async function GET(req: NextRequest) {
   const session = await auth();
 
-  if (!isAuthorized(req, !!session)) {
+  // Determine whose briefs to return. A logged-in advisor gets their own; an
+  // automation caller uses the shared secret plus an explicit ?userId=.
+  let userId: string | null = session?.user?.id ?? null;
+  if (!userId) {
+    const secret = process.env.RTM_API_SECRET;
+    const authHeader = req.headers.get("authorization");
+    if (secret && authHeader === `Bearer ${secret}`) {
+      userId = req.nextUrl.searchParams.get("userId");
+    }
+  }
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Default: just today's ranked shortlist (one run's worth). Pass ?limit=
-  // to pull more rows further back in history.
   const limitParam = req.nextUrl.searchParams.get("limit");
-  const limit = Math.min(Math.max(Number(limitParam) || 3, 1), 100);
+  const limit = Math.min(Math.max(Number(limitParam) || 10, 1), 100);
 
   const rows = await db
     .select({
       id: rtmBriefs.id,
-      rank: rtmBriefs.rank,
       whatHappened: rtmBriefs.whatHappened,
       meaningForMortgageHolders: rtmBriefs.meaningForMortgageHolders,
       closingQuestion: rtmBriefs.closingQuestion,
@@ -37,24 +36,19 @@ export async function GET(req: NextRequest) {
       title: rtmNewsItems.title,
       url: rtmNewsItems.url,
       publishedAt: rtmNewsItems.publishedAt,
-      runAt: rtmRuns.runAt,
     })
     .from(rtmBriefs)
     .innerJoin(rtmNewsItems, eq(rtmBriefs.newsItemId, rtmNewsItems.id))
     .leftJoin(rtmRuns, eq(rtmNewsItems.runId, rtmRuns.id))
+    .where(and(eq(rtmBriefs.userId, userId), eq(rtmBriefs.status, "approved")))
     .orderBy(desc(rtmRuns.runAt), asc(rtmBriefs.rank))
     .limit(limit);
 
   return NextResponse.json({
     generatedAt: new Date().toISOString(),
-    brand: {
-      primary: "#2E8B57",
-      dark: "#0F243E",
-      accent: "#D4AF37",
-    },
+    brand: { primary: "#2E8B57", dark: "#0F243E", accent: "#D4AF37" },
     items: rows.map((row) => ({
       id: row.id,
-      rank: row.rank,
       source: row.source,
       title: row.title,
       url: row.url,

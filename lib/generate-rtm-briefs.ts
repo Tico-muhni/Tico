@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { rtmNewsItems, rtmBriefs, rtmRuns } from "@/drizzle/schema";
 import {
@@ -43,8 +43,11 @@ function relevanceScore(matchedKeywords: string[], parsedDate: Date | null): num
  * This does NOT call the AI - it's free and unlimited. The user then picks which
  * candidates to turn into briefs via generateBriefForNewsItem.
  */
-export async function scanForCandidates(maxCandidates = MAX_CANDIDATES) {
-  const [run] = await db.insert(rtmRuns).values({ status: "running" }).returning();
+export async function scanForCandidates(userId: string, maxCandidates = MAX_CANDIDATES) {
+  const [run] = await db
+    .insert(rtmRuns)
+    .values({ userId, status: "running" })
+    .returning();
 
   try {
     const byUrl = new Map<string, Candidate>();
@@ -92,6 +95,7 @@ export async function scanForCandidates(maxCandidates = MAX_CANDIDATES) {
       await db
         .insert(rtmNewsItems)
         .values({
+          userId,
           runId: run.id,
           source: candidate.source,
           title: candidate.title,
@@ -101,7 +105,7 @@ export async function scanForCandidates(maxCandidates = MAX_CANDIDATES) {
           matchedKeywords: candidate.matchedKeywords,
         })
         .onConflictDoUpdate({
-          target: rtmNewsItems.url,
+          target: [rtmNewsItems.userId, rtmNewsItems.url],
           set: { runId: run.id, fetchedAt: sql`now()` },
         });
       stored += 1;
@@ -135,11 +139,15 @@ export async function scanForCandidates(maxCandidates = MAX_CANDIDATES) {
  * This is the only step that calls the AI. Idempotent - if a brief already
  * exists for the item, it's returned as-is.
  */
-export async function generateBriefForNewsItem(newsItemId: string) {
+export async function generateBriefForNewsItem(
+  userId: string,
+  newsItemId: string,
+  apiKey?: string | null
+) {
   const [item] = await db
     .select()
     .from(rtmNewsItems)
-    .where(eq(rtmNewsItems.id, newsItemId))
+    .where(and(eq(rtmNewsItems.id, newsItemId), eq(rtmNewsItems.userId, userId)))
     .limit(1);
   if (!item) throw new Error("הכתבה לא נמצאה");
 
@@ -150,13 +158,17 @@ export async function generateBriefForNewsItem(newsItemId: string) {
     .limit(1);
   if (existing) return; // already briefed
 
-  const brief = await generateRtmBrief({
-    source: item.source,
-    title: item.title,
-    summary: item.summary,
-  });
+  const brief = await generateRtmBrief(
+    {
+      source: item.source,
+      title: item.title,
+      summary: item.summary,
+    },
+    apiKey
+  );
 
   await db.insert(rtmBriefs).values({
+    userId,
     newsItemId,
     rank: 1,
     whatHappened: brief.whatHappened,
