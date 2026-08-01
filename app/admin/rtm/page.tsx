@@ -37,6 +37,9 @@ export default async function RtmPage() {
   for (const row of rows) {
     const publishedAt = row.publishedAt ? row.publishedAt.toISOString() : null;
     if (row.briefId && row.whatHappened) {
+      // Dismissed briefs are hidden entirely - dismissing is how you clear a
+      // brief off the board.
+      if (row.status === "dismissed") continue;
       briefs.push({
         id: row.briefId,
         rank: 1,
@@ -113,17 +116,6 @@ export default async function RtmPage() {
           </p>
         )}
 
-        {briefs.length > 0 && (
-          <section className="flex flex-col gap-4">
-            <h2 className="text-sm font-extrabold" style={{ color: "#0F243E" }}>
-              הבריפים שלך ({briefs.length})
-            </h2>
-            {briefs.map((brief) => (
-              <RtmBriefCard key={brief.id} brief={brief} />
-            ))}
-          </section>
-        )}
-
         {candidates.length > 0 && (
           <section className="flex flex-col gap-3">
             <h2 className="text-sm font-extrabold" style={{ color: "#0F243E" }}>
@@ -131,6 +123,17 @@ export default async function RtmPage() {
             </h2>
             {candidates.map((candidate) => (
               <CandidateRow key={candidate.id} candidate={candidate} />
+            ))}
+          </section>
+        )}
+
+        {briefs.length > 0 && (
+          <section className="flex flex-col gap-4">
+            <h2 className="text-sm font-extrabold" style={{ color: "#0F243E" }}>
+              הבריפים שהכנת ({briefs.length})
+            </h2>
+            {briefs.map((brief) => (
+              <RtmBriefCard key={brief.id} brief={brief} />
             ))}
           </section>
         )}
