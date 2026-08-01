@@ -13,7 +13,7 @@ export default async function LoginPage({
         <h1 className="mb-6 text-center text-xl font-semibold text-primary">
           כניסה לפאנל הניהול
         </h1>
-        <LoginForm callbackUrl={callbackUrl ?? "/admin/drafts"} />
+        <LoginForm callbackUrl={callbackUrl ?? "/admin/rtm"} />
       </div>
     </div>
   );
