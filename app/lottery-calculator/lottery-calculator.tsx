@@ -34,6 +34,10 @@ const MORTGAGE_LTV = 0.75;
 const MIN_EQUITY_WITH_GRANT = 60_000;
 const MIN_EQUITY_NO_GRANT = 100_000;
 
+// הערכת החזר חודשי - ריבית ממוצעת לדוגמה, לא הצעה מחייבת מבנק כלשהו.
+const MORTGAGE_INTEREST_RATE_PERCENT = 4.7;
+const MORTGAGE_TERM_YEARS = [20, 25, 30];
+
 const GRANT_OPTIONS = [
   { value: 0, label: "אין מענק (0 ₪)" },
   { value: 40_000, label: "40,000 ₪" },
@@ -128,6 +132,12 @@ function calculateEquityAndMortgage(
   return { mortgage, equity: contractPrice - mortgage };
 }
 
+function calculateMonthlyPayment(principal: number, years: number) {
+  const monthlyRate = MORTGAGE_INTEREST_RATE_PERCENT / 100 / 12;
+  const numPayments = years * 12;
+  return (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -numPayments));
+}
+
 export default function LotteryCalculator() {
   // נתוני ההגרלה - משתנים מהגרלה להגרלה
   const [pricePerSqm, setPricePerSqm] = useState<number>(0);
@@ -162,7 +172,12 @@ export default function LotteryCalculator() {
         preDiscountIncVat,
         grant
       );
-      const netEquityAfterGrant = Math.max(equity - grant, 0);
+      const monthlyPayments = Object.fromEntries(
+        MORTGAGE_TERM_YEARS.map((years) => [
+          years,
+          calculateMonthlyPayment(mortgage, years),
+        ])
+      ) as Record<number, number>;
 
       return {
         size,
@@ -174,7 +189,7 @@ export default function LotteryCalculator() {
         contractPrice,
         equity,
         mortgage,
-        netEquityAfterGrant,
+        monthlyPayments,
       };
     });
   }, [pricePerSqm, discountPercent, discountCap, balconySqm, storageSqm, grant]);
@@ -336,19 +351,25 @@ export default function LotteryCalculator() {
             על 2.1 מיליון ₪, המשכנתא מבוססת על הגבוה מבין 2.1 מיליון ₪ למחיר
             החוזה. בכפוף למינימום הון עצמי -{" "}
             {currency.format(MIN_EQUITY_WITH_GRANT)} ₪ אם יש מענק מקום,
-            אחרת {currency.format(MIN_EQUITY_NO_GRANT)} ₪.
+            אחרת {currency.format(MIN_EQUITY_NO_GRANT)} ₪. ההחזר החודשי
+            מוערך לפי ריבית ממוצעת לדוגמה של{" "}
+            {MORTGAGE_INTEREST_RATE_PERCENT}% - אינו הצעה מחייבת מבנק כלשהו.
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
+          <table className="w-full min-w-[760px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-black/10 text-right text-foreground/70">
                 <th className="py-2 pr-2">גודל</th>
                 <th className="py-2">מחיר חוזה</th>
                 <th className="py-2">הון עצמי נדרש</th>
                 <th className="py-2">מענק מקום</th>
-                <th className="py-2">הון עצמי מהכיס (נטו)</th>
                 <th className="py-2">גובה משכנתא</th>
+                {MORTGAGE_TERM_YEARS.map((years) => (
+                  <th key={years} className="py-2">
+                    החזר חודשי ל-{years} שנה
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -362,12 +383,16 @@ export default function LotteryCalculator() {
                     </span>
                   </td>
                   <td className="py-2">{currency.format(row.contractPrice)} ₪</td>
-                  <td className="py-2">{currency.format(row.equity)} ₪</td>
-                  <td className="py-2">{currency.format(grant)} ₪</td>
                   <td className="py-2 font-semibold text-primary">
-                    {currency.format(row.netEquityAfterGrant)} ₪
+                    {currency.format(row.equity)} ₪
                   </td>
+                  <td className="py-2">{currency.format(grant)} ₪</td>
                   <td className="py-2">{currency.format(row.mortgage)} ₪</td>
+                  {MORTGAGE_TERM_YEARS.map((years) => (
+                    <td key={years} className="py-2">
+                      {currency.format(row.monthlyPayments[years])} ₪
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
