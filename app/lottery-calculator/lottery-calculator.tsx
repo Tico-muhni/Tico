@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import Image from "next/image";
 
 type ApartmentSize = {
   id: number;
@@ -45,6 +46,69 @@ const currency = new Intl.NumberFormat("he-IL", {
 
 function numberInputValue(value: number) {
   return Number.isFinite(value) ? value : 0;
+}
+
+function HelpTip({
+  text,
+  imageSrc,
+  imageAlt,
+  imageWidth,
+  imageHeight,
+}: {
+  text: string;
+  imageSrc: string;
+  imageAlt: string;
+  imageWidth: number;
+  imageHeight: number;
+}) {
+  const [hover, setHover] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const open = hover || pinned;
+  const wrapperRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!pinned) return;
+    function handleOutsideClick(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setPinned(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [pinned]);
+
+  return (
+    <span
+      ref={wrapperRef}
+      className="relative inline-flex"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      <button
+        type="button"
+        onClick={() => setPinned((p) => !p)}
+        aria-label="איפה למצוא את זה באתר ההגרלה"
+        className="flex h-4 w-4 items-center justify-center rounded-full border border-foreground/30 text-[10px] font-bold leading-none text-foreground/50 transition-colors hover:border-primary hover:text-primary"
+      >
+        ?
+      </button>
+      {open && (
+        <div
+          role="tooltip"
+          className="absolute top-6 right-0 z-20 w-72 rounded-xl border border-black/10 bg-surface p-3 text-right normal-case shadow-lg"
+        >
+          <p className="mb-2 text-xs font-normal text-foreground/80">{text}</p>
+          <Image
+            src={imageSrc}
+            alt={imageAlt}
+            width={imageWidth}
+            height={imageHeight}
+            className="w-full rounded-lg border border-black/10"
+          />
+        </div>
+      )}
+    </span>
+  );
 }
 
 function calculateEquityAndMortgage(
@@ -123,21 +187,57 @@ export default function LotteryCalculator() {
           <p className="text-xs text-foreground/50">משתנים מהגרלה להגרלה - יש למלא לפי הפרטים באתר.</p>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="מחיר מוצג למ״ר (ללא מע״מ, ללא הצמדה)" suffix="₪">
+          <Field
+            label="מחיר מוצג למ״ר (ללא מע״מ, ללא הצמדה)"
+            suffix="₪"
+            help={
+              <HelpTip
+                text={'בעמוד הדירה הספציפית באתר ההגרלה, בכרטיס "מחיר", מופיעה השורה "מחיר למטר" - זה המספר שיש להזין כאן.'}
+                imageSrc="/lottery-calculator/price-example.jpg"
+                imageAlt="דוגמה לכרטיס מחיר באתר ההגרלה"
+                imageWidth={800}
+                imageHeight={737}
+              />
+            }
+          >
             <NumberInput
               value={pricePerSqm}
               onChange={setPricePerSqm}
               min={0}
             />
           </Field>
-          <Field label="אחוז הנחה (מסלול א׳)" suffix="%">
+          <Field
+            label="אחוז הנחה (מסלול א׳)"
+            suffix="%"
+            help={
+              <HelpTip
+                text={'מתחת לכרטיס המחיר, בכרטיס "הערה", כתובה נוסחת ההנחה: הנמוך מבין אחוז מסוים (למשל 25%) לבין תקרה בש״ח. האחוז הוא המספר הזה.'}
+                imageSrc="/lottery-calculator/note-example.jpg"
+                imageAlt="דוגמה לכרטיס הערה עם נוסחת ההנחה באתר ההגרלה"
+                imageWidth={800}
+                imageHeight={620}
+              />
+            }
+          >
             <NumberInput
               value={discountPercent}
               onChange={setDiscountPercent}
               min={0}
             />
           </Field>
-          <Field label="תקרת הנחה מקסימלית (מסלול ב׳)" suffix="₪">
+          <Field
+            label="תקרת הנחה מקסימלית (מסלול ב׳)"
+            suffix="₪"
+            help={
+              <HelpTip
+                text={'באותו כרטיס "הערה", התקרה בש״ח (למשל 500,000 ₪) היא המספר השני בנוסחת ההנחה - ההנחה בפועל היא הנמוך מבין האחוז לתקרה.'}
+                imageSrc="/lottery-calculator/note-example.jpg"
+                imageAlt="דוגמה לכרטיס הערה עם נוסחת ההנחה באתר ההגרלה"
+                imageWidth={800}
+                imageHeight={620}
+              />
+            }
+          >
             <NumberInput value={discountCap} onChange={setDiscountCap} min={0} />
           </Field>
           <Field label="מחיר ייחוס בהערות (מידע בלבד, לא נכנס לחישוב)" suffix="₪">
@@ -287,15 +387,20 @@ export default function LotteryCalculator() {
 function Field({
   label,
   suffix,
+  help,
   children,
 }: {
   label: string;
   suffix?: string;
+  help?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm font-medium text-foreground/80">
-      {label}
+      <span className="flex items-center gap-1.5">
+        {label}
+        {help}
+      </span>
       <div className="flex items-center gap-2">
         {children}
         {suffix && <span className="text-foreground/50">{suffix}</span>}
