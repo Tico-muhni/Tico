@@ -423,6 +423,20 @@ export default function LotteryCalculator() {
             </tbody>
           </table>
         </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-background px-4 py-3">
+          <p className="text-sm text-foreground/80">
+            רוצים לבדוק אם ההכנסה שלכם מתאימה להחזר הזה? זה בדיוק מה שאני
+            בודק בשיחה.
+          </p>
+          <a
+            href="https://wa.me/972507700322?text=%D7%94%D7%99%D7%99%20%D7%A6%27%D7%99%D7%A7%D7%95!%20%D7%A8%D7%90%D7%99%D7%AA%D7%99%20%D7%91%D7%9E%D7%97%D7%A9%D7%91%D7%95%D7%9F%20%D7%90%D7%AA%20%D7%94%D7%94%D7%97%D7%96%D7%A8%20%D7%94%D7%97%D7%95%D7%93%D7%A9%D7%99%20%D7%94%D7%A6%D7%A4%D7%95%D7%99%2C%20%D7%A8%D7%95%D7%A6%D7%94%20%D7%9C%D7%91%D7%93%D7%95%D7%A7%20%D7%90%D7%9D%20%D7%94%D7%94%D7%9B%D7%A0%D7%A1%D7%94%20%D7%A9%D7%9C%D7%99%20%D7%9E%D7%AA%D7%90%D7%99%D7%9E%D7%94%20%D7%9C%D7%9E%D7%A9%D7%9B%D7%A0%D7%AA%D7%94%20%D7%94%D7%96%D7%95."
+            target="_blank"
+            rel="noopener"
+            className="whitespace-nowrap rounded-full bg-button px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          >
+            בדיקה מול היועץ ב-WhatsApp
+          </a>
+        </div>
       </section>
 
       <p className="text-xs text-foreground/50">
