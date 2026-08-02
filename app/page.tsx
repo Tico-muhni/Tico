@@ -17,12 +17,6 @@ export default function Home() {
         >
           כניסה לפאנל הניהול
         </Link>
-        <Link
-          href="/lottery-calculator"
-          className="text-sm font-medium text-primary underline transition-opacity hover:opacity-80"
-        >
-          מחשבון הגרלות דיור
-        </Link>
       </main>
     </div>
   );
