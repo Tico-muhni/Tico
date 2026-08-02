@@ -260,11 +260,11 @@ export default function LotteryCalculator() {
             suffix="₪"
             help={
               <HelpTip
-                text={'בעמוד הדירה הספציפית באתר ההגרלה, בכרטיס "מחיר", מופיעה השורה "מחיר למטר" - זה המספר שיש להזין כאן.'}
+                text={'בעמוד הדירה הספציפית באתר ההגרלה, בכרטיס "מחיר", מופיעה השורה "מחיר למטר" - זה המספר שיש להזין כאן (מסומן בירוק בתמונה).'}
                 imageSrc="/lottery-calculator/price-example.jpg"
-                imageAlt="דוגמה לכרטיס מחיר באתר ההגרלה"
+                imageAlt="דוגמה לכרטיס מחיר באתר ההגרלה, עם מחיר למטר מסומן"
                 imageWidth={800}
-                imageHeight={737}
+                imageHeight={460}
               />
             }
           >
@@ -298,11 +298,11 @@ export default function LotteryCalculator() {
             suffix="₪"
             help={
               <HelpTip
-                text={'באותו כרטיס "הערה", התקרה בש״ח (למשל 500,000 ₪) היא המספר השני בנוסחת ההנחה - ההנחה בפועל היא הנמוך מבין האחוז לתקרה.'}
-                imageSrc="/lottery-calculator/note-example.jpg"
-                imageAlt="דוגמה לכרטיס הערה עם נוסחת ההנחה באתר ההגרלה"
+                text={'באותו כרטיס "הערה", התקרה בש״ח (למשל 500,000 ₪, מסומנת בירוק בתמונה) היא המספר השני בנוסחת ההנחה - ההנחה בפועל היא הנמוך מבין האחוז לתקרה.'}
+                imageSrc="/lottery-calculator/note-cap-example.jpg"
+                imageAlt="דוגמה לכרטיס הערה עם תקרת ההנחה מסומנת"
                 imageWidth={800}
-                imageHeight={620}
+                imageHeight={592}
               />
             }
           >
@@ -313,11 +313,11 @@ export default function LotteryCalculator() {
             suffix="₪"
             help={
               <HelpTip
-                text={'באותו כרטיס "הערה", "מחיר הדירה המעודכן" למ״ר - זה שווי השוק הרשמי של הפרויקט, ומשמש לחישוב המשכנתה (לא לחישוב ההנחה).'}
-                imageSrc="/lottery-calculator/note-example.jpg"
-                imageAlt="דוגמה לכרטיס הערה עם מחיר הדירה המעודכן באתר ההגרלה"
+                text={'באותו כרטיס "הערה", "מחיר הדירה המעודכן" למ״ר (מסומן בירוק בתמונה) - זה שווי השוק הרשמי של הפרויקט, ומשמש לחישוב המשכנתה (לא לחישוב ההנחה).'}
+                imageSrc="/lottery-calculator/note-reference-example.jpg"
+                imageAlt="דוגמה לכרטיס הערה עם מחיר הדירה המעודכן מסומן"
                 imageWidth={800}
-                imageHeight={620}
+                imageHeight={592}
               />
             }
           >
