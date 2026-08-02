@@ -167,9 +167,14 @@ export default function LotteryCalculator() {
       const finalIncVat = preDiscountIncVat - discount;
       const contractPrice = finalIncVat + parkingCost;
 
+      const marketValue =
+        referencePrice > 0
+          ? referencePrice * calcSqm * (1 + VAT_PERCENT / 100)
+          : preDiscountIncVat;
+
       const { mortgage, equity } = calculateEquityAndMortgage(
         contractPrice,
-        preDiscountIncVat,
+        marketValue,
         grant
       );
       const monthlyPayments = Object.fromEntries(
@@ -192,7 +197,15 @@ export default function LotteryCalculator() {
         monthlyPayments,
       };
     });
-  }, [pricePerSqm, discountPercent, discountCap, balconySqm, storageSqm, grant]);
+  }, [
+    pricePerSqm,
+    discountPercent,
+    discountCap,
+    referencePrice,
+    balconySqm,
+    storageSqm,
+    grant,
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -255,7 +268,19 @@ export default function LotteryCalculator() {
           >
             <NumberInput value={discountCap} onChange={setDiscountCap} min={0} />
           </Field>
-          <Field label="מחיר ייחוס בהערות (מידע בלבד, לא נכנס לחישוב)" suffix="₪">
+          <Field
+            label="מחיר ייחוס בהערות (ללא מע״מ, למ״ר)"
+            suffix="₪"
+            help={
+              <HelpTip
+                text={'באותו כרטיס "הערה", "מחיר הדירה המעודכן" למ״ר - זה שווי השוק הרשמי של הפרויקט, ומשמש לחישוב המשכנתה (לא לחישוב ההנחה).'}
+                imageSrc="/lottery-calculator/note-example.jpg"
+                imageAlt="דוגמה לכרטיס הערה עם מחיר הדירה המעודכן באתר ההגרלה"
+                imageWidth={800}
+                imageHeight={620}
+              />
+            }
+          >
             <NumberInput
               value={referencePrice}
               onChange={setReferencePrice}
@@ -347,9 +372,9 @@ export default function LotteryCalculator() {
             הון עצמי ומשכנתא (לפי כללי מחיר למשתכן)
           </h2>
           <p className="text-xs text-foreground/50">
-            משכנתא של עד 75% משווי השוק (המחיר לפני הנחה); אם שווי השוק עולה
-            על 2.1 מיליון ₪, המשכנתא מבוססת על הגבוה מבין 2.1 מיליון ₪ למחיר
-            החוזה. בכפוף למינימום הון עצמי -{" "}
+            משכנתא של עד 75% משווי השוק (מחיר ייחוס אם הוזן, אחרת המחיר לפני
+            הנחה); אם שווי השוק עולה על 2.1 מיליון ₪, המשכנתא מבוססת על הגבוה
+            מבין 2.1 מיליון ₪ למחיר החוזה. בכפוף למינימום הון עצמי -{" "}
             {currency.format(MIN_EQUITY_WITH_GRANT)} ₪ אם יש מענק מקום,
             אחרת {currency.format(MIN_EQUITY_NO_GRANT)} ₪. ההחזר החודשי
             מוערך לפי ריבית ממוצעת לדוגמה של{" "}
