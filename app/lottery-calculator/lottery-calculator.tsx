@@ -187,32 +187,6 @@ export default function LotteryCalculator() {
       </section>
 
       <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
-        <div>
-          <h2 className="text-lg font-semibold text-primary">
-            הנחות קבועות של המחשבון
-          </h2>
-          <p className="text-xs text-foreground/50">
-            ערכים קבועים שאינם משתנים בין הגרלות, ולכן נעולים לעריכה.
-          </p>
-        </div>
-        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <ConstantItem label="מע״מ" value={`${VAT_PERCENT}%`} />
-          <ConstantItem
-            label="מכפיל מרפסת"
-            value={`${BALCONY_FACTOR * 100}% ממחיר מ״ר`}
-          />
-          <ConstantItem
-            label="מכפיל מחסן"
-            value={`${STORAGE_FACTOR * 100}% ממחיר מ״ר`}
-          />
-          <ConstantItem
-            label="חניה"
-            value={`${currency.format(PARKING_PRICE)} ₪ (${PARKING_COUNT}, מחיר מלא ללא הנחה)`}
-          />
-        </dl>
-      </section>
-
-      <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-primary">מענק מקום</h2>
         <div className="flex flex-wrap gap-4">
           {GRANT_OPTIONS.map((option) => (
@@ -387,20 +361,6 @@ export default function LotteryCalculator() {
         את פרטי ההגרלה המדויקים באתר הרשמי ואת תנאי המימון מול הבנק לפני
         קבלת החלטה.
       </p>
-    </div>
-  );
-}
-
-function ConstantItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-1 rounded-lg border border-black/5 bg-background px-3 py-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-foreground/60">{label}</span>
-        <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-medium text-foreground/50">
-          קבוע
-        </span>
-      </div>
-      <span className="text-sm font-semibold text-foreground">{value}</span>
     </div>
   );
 }
