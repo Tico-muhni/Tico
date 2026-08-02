@@ -24,11 +24,14 @@ const STORAGE_FACTOR = 0.25;
 const PARKING_PRICE = 70000;
 const PARKING_COUNT = 1;
 
-// כללי המימון של מחיר למשתכן: עד 75% מ-2.1 מיליון ₪, ובכפוף למינימום
-// 100,000 ₪ הון עצמי. מעל 2.1 מיליון ₪ מחיר חוזה - 75% מהמחיר בפועל.
+// כללי המימון של מחיר למשתכן (הוראת ניהול בנקאי תקין 329, סעיף 4א):
+// אם שווי השוק (המחיר לפני הנחה) עולה על 2.1 מיליון ₪, שווי הנכס לצורך
+// המשכנתה הוא הגבוה מבין 2.1 מיליון ₪ לבין מחיר החוזה. המשכנתה עד 75%
+// משווי זה, בכפוף למינימום הון עצמי: 60,000 ₪ אם יש מענק מקום, אחרת 100,000 ₪.
 const MORTGAGE_PRICE_CAP = 2_100_000;
 const MORTGAGE_LTV = 0.75;
-const MIN_EQUITY = 100_000;
+const MIN_EQUITY_WITH_GRANT = 60_000;
+const MIN_EQUITY_NO_GRANT = 100_000;
 
 const GRANT_OPTIONS = [
   { value: 0, label: "אין מענק (0 ₪)" },
@@ -44,15 +47,20 @@ function numberInputValue(value: number) {
   return Number.isFinite(value) ? value : 0;
 }
 
-function calculateEquityAndMortgage(contractPrice: number) {
-  if (contractPrice <= MORTGAGE_PRICE_CAP) {
-    const mortgage = Math.max(
-      Math.min(MORTGAGE_LTV * MORTGAGE_PRICE_CAP, contractPrice - MIN_EQUITY),
-      0
-    );
-    return { mortgage, equity: contractPrice - mortgage };
-  }
-  const mortgage = MORTGAGE_LTV * contractPrice;
+function calculateEquityAndMortgage(
+  contractPrice: number,
+  marketValue: number,
+  grant: number
+) {
+  const minEquity = grant > 0 ? MIN_EQUITY_WITH_GRANT : MIN_EQUITY_NO_GRANT;
+  const recognizedValue =
+    marketValue > MORTGAGE_PRICE_CAP
+      ? Math.max(MORTGAGE_PRICE_CAP, contractPrice)
+      : contractPrice;
+  const mortgage = Math.max(
+    Math.min(MORTGAGE_LTV * recognizedValue, contractPrice - minEquity),
+    0
+  );
   return { mortgage, equity: contractPrice - mortgage };
 }
 
@@ -107,7 +115,11 @@ export default function LotteryCalculator() {
       const finalIncVat = preDiscountIncVat - discount;
       const contractPrice = finalIncVat + parkingCost;
 
-      const { mortgage, equity } = calculateEquityAndMortgage(contractPrice);
+      const { mortgage, equity } = calculateEquityAndMortgage(
+        contractPrice,
+        preDiscountIncVat,
+        grant
+      );
       const netEquityAfterGrant = Math.max(equity - grant, 0);
 
       return {
@@ -327,9 +339,11 @@ export default function LotteryCalculator() {
             הון עצמי ומשכנתא (לפי כללי מחיר למשתכן)
           </h2>
           <p className="text-xs text-foreground/50">
-            עד 2.1 מיליון ₪ מחיר חוזה: משכנתא של עד 75% מ-2.1 מיליון ₪,
-            בכפוף למינימום {currency.format(MIN_EQUITY)} ₪ הון עצמי. מעל 2.1
-            מיליון ₪ מחיר חוזה: משכנתא של 75% מהמחיר בפועל.
+            אם המחיר לפני הנחה (שווי השוק) עולה על 2.1 מיליון ₪: משכנתא של
+            עד 75% מהגבוה מבין 2.1 מיליון ₪ למחיר החוזה. אחרת: משכנתא של עד
+            75% ממחיר החוזה בפועל. בכפוף למינימום הון עצמי -{" "}
+            {currency.format(MIN_EQUITY_WITH_GRANT)} ₪ אם יש מענק מקום,
+            אחרת {currency.format(MIN_EQUITY_NO_GRANT)} ₪.
           </p>
         </div>
         <div className="overflow-x-auto">
