@@ -74,34 +74,12 @@ export default function LotteryCalculator() {
   const [storageSqm, setStorageSqm] = useState<number>(6);
   const [grant, setGrant] = useState<number>(0);
 
-  // גדלי דירות
-  const [sizes, setSizes] = useState<ApartmentSize[]>(DEFAULT_SIZES);
-  const [nextId, setNextId] = useState(DEFAULT_SIZES.length + 1);
-
-  function updateSize(id: number, patch: Partial<ApartmentSize>) {
-    setSizes((prev) =>
-      prev.map((size) => (size.id === id ? { ...size, ...patch } : size))
-    );
-  }
-
-  function addSize() {
-    setSizes((prev) => [
-      ...prev,
-      { id: nextId, label: `דירה ${prev.length + 1}`, mainSqm: 90 },
-    ]);
-    setNextId((id) => id + 1);
-  }
-
-  function removeSize(id: number) {
-    setSizes((prev) => prev.filter((size) => size.id !== id));
-  }
-
   const results = useMemo(() => {
     const parkingCost = PARKING_PRICE * PARKING_COUNT;
     const balconySqmEquivalent = balconySqm * BALCONY_FACTOR;
     const storageSqmEquivalent = storageSqm * STORAGE_FACTOR;
 
-    return sizes.map((size) => {
+    return DEFAULT_SIZES.map((size) => {
       const calcSqm = size.mainSqm + balconySqmEquivalent + storageSqmEquivalent;
 
       const preDiscountExVat = calcSqm * pricePerSqm;
@@ -135,15 +113,7 @@ export default function LotteryCalculator() {
         netEquityAfterGrant,
       };
     });
-  }, [
-    sizes,
-    pricePerSqm,
-    discountPercent,
-    discountCap,
-    balconySqm,
-    storageSqm,
-    grant,
-  ]);
+  }, [pricePerSqm, discountPercent, discountCap, balconySqm, storageSqm, grant]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -177,10 +147,10 @@ export default function LotteryCalculator() {
               min={0}
             />
           </Field>
-          <Field label="גודל מרפסת (מחושב לפי 50% ממחיר מ״ר - קבוע)" suffix="מ״ר">
+          <Field label="גודל מרפסת" suffix="מ״ר">
             <NumberInput value={balconySqm} onChange={setBalconySqm} min={0} />
           </Field>
-          <Field label="גודל מחסן (מחושב לפי 25% ממחיר מ״ר - קבוע)" suffix="מ״ר">
+          <Field label="גודל מחסן" suffix="מ״ר">
             <NumberInput value={storageSqm} onChange={setStorageSqm} min={0} />
           </Field>
         </div>
@@ -204,57 +174,6 @@ export default function LotteryCalculator() {
               {option.label}
             </label>
           ))}
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-primary">גדלי דירות</h2>
-          <button
-            type="button"
-            onClick={addSize}
-            className="rounded-full border border-primary/30 px-4 py-1.5 text-sm font-medium text-primary transition-opacity hover:opacity-80"
-          >
-            + הוספת גודל
-          </button>
-        </div>
-        <div className="flex flex-col gap-2">
-          {sizes.map((size) => (
-            <div
-              key={size.id}
-              className="grid grid-cols-[1fr_1fr_auto] items-center gap-3"
-            >
-              <input
-                type="text"
-                value={size.label}
-                onChange={(e) =>
-                  updateSize(size.id, { label: e.target.value })
-                }
-                className="rounded-lg border border-black/10 px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-              <div className="flex items-center gap-2">
-                <NumberInput
-                  value={size.mainSqm}
-                  onChange={(v) => updateSize(size.id, { mainSqm: v })}
-                  min={0}
-                />
-                <span className="text-sm text-foreground/60">מ״ר עיקרי</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => removeSize(size.id)}
-                className="rounded-full px-3 py-1.5 text-sm font-medium text-button transition-opacity hover:opacity-80"
-                aria-label={`הסרת ${size.label}`}
-              >
-                הסרה
-              </button>
-            </div>
-          ))}
-          {sizes.length === 0 && (
-            <p className="text-sm text-foreground/60">
-              אין גדלי דירות. הוסיפו גודל כדי לראות תוצאות.
-            </p>
-          )}
         </div>
       </section>
 
