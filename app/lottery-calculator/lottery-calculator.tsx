@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 
 type ApartmentSize = {
@@ -68,25 +68,63 @@ function HelpTip({
   const [hover, setHover] = useState(false);
   const [pinned, setPinned] = useState(false);
   const open = hover || pinned;
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const wrapperRef = useRef<HTMLSpanElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const hoverCapableRef = useRef(false);
 
   useEffect(() => {
-    if (!pinned) return;
+    hoverCapableRef.current = window.matchMedia(
+      "(hover: hover) and (pointer: fine)"
+    ).matches;
+  }, []);
+
+  // ממקם את החלונית עם קואורדינטות מוחלטות ביחס ל-viewport (position: fixed)
+  // ומהדק אותה לגבולות המסך - כך שהיא לא תיחתך או תזוז בצורה מוזרה במובייל,
+  // ללא תלות באיפה בדיוק כפתור ה-"?" נופל כשתווית השדה עוברת שורה.
+  const updatePosition = useCallback(() => {
+    const btn = wrapperRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const margin = 12;
+    const panelWidth = Math.min(288, window.innerWidth - margin * 2);
+    let left = rect.right - panelWidth;
+    left = Math.min(left, window.innerWidth - panelWidth - margin);
+    left = Math.max(left, margin);
+    const top = rect.bottom + 8;
+    setPos({ top, left, width: panelWidth });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+    // סגירת ה"נעיצה" בלחיצה מחוץ לחלונית - hover נסגר ממילא ב-mouseleave.
     function handleOutsideClick(e: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node) &&
+        panelRef.current &&
+        !panelRef.current.contains(e.target as Node)
+      ) {
         setPinned(false);
       }
     }
     document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [pinned]);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, updatePosition]);
 
   return (
     <span
       ref={wrapperRef}
       className="relative inline-flex"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      onMouseEnter={() => hoverCapableRef.current && setHover(true)}
+      onMouseLeave={() => hoverCapableRef.current && setHover(false)}
     >
       <button
         type="button"
@@ -96,10 +134,12 @@ function HelpTip({
       >
         ?
       </button>
-      {open && (
+      {open && pos && (
         <div
+          ref={panelRef}
           role="tooltip"
-          className="absolute top-6 right-0 z-20 w-72 rounded-xl border border-black/10 bg-surface p-3 text-right normal-case shadow-lg"
+          style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width }}
+          className="z-50 rounded-xl border border-black/10 bg-surface p-3 text-right normal-case shadow-lg"
         >
           <p className="mb-2 text-xs font-normal text-foreground/80">{text}</p>
           <Image
@@ -107,7 +147,7 @@ function HelpTip({
             alt={imageAlt}
             width={imageWidth}
             height={imageHeight}
-            className="w-full rounded-lg border border-black/10"
+            className="h-auto w-full rounded-lg border border-black/10"
           />
         </div>
       )}
