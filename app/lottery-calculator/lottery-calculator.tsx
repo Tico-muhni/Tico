@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 
 type ApartmentSize = {
@@ -68,25 +68,63 @@ function HelpTip({
   const [hover, setHover] = useState(false);
   const [pinned, setPinned] = useState(false);
   const open = hover || pinned;
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const wrapperRef = useRef<HTMLSpanElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const hoverCapableRef = useRef(false);
 
   useEffect(() => {
-    if (!pinned) return;
+    hoverCapableRef.current = window.matchMedia(
+      "(hover: hover) and (pointer: fine)"
+    ).matches;
+  }, []);
+
+  // ממקם את החלונית עם קואורדינטות מוחלטות ביחס ל-viewport (position: fixed)
+  // ומהדק אותה לגבולות המסך - כך שהיא לא תיחתך או תזוז בצורה מוזרה במובייל,
+  // ללא תלות באיפה בדיוק כפתור ה-"?" נופל כשתווית השדה עוברת שורה.
+  const updatePosition = useCallback(() => {
+    const btn = wrapperRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const margin = 12;
+    const panelWidth = Math.min(288, window.innerWidth - margin * 2);
+    let left = rect.right - panelWidth;
+    left = Math.min(left, window.innerWidth - panelWidth - margin);
+    left = Math.max(left, margin);
+    const top = rect.bottom + 8;
+    setPos({ top, left, width: panelWidth });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+    // סגירת ה"נעיצה" בלחיצה מחוץ לחלונית - hover נסגר ממילא ב-mouseleave.
     function handleOutsideClick(e: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node) &&
+        panelRef.current &&
+        !panelRef.current.contains(e.target as Node)
+      ) {
         setPinned(false);
       }
     }
     document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [pinned]);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, updatePosition]);
 
   return (
     <span
       ref={wrapperRef}
       className="relative inline-flex"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      onMouseEnter={() => hoverCapableRef.current && setHover(true)}
+      onMouseLeave={() => hoverCapableRef.current && setHover(false)}
     >
       <button
         type="button"
@@ -96,10 +134,12 @@ function HelpTip({
       >
         ?
       </button>
-      {open && (
+      {open && pos && (
         <div
+          ref={panelRef}
           role="tooltip"
-          className="absolute top-6 right-0 z-20 w-72 rounded-xl border border-black/10 bg-surface p-3 text-right normal-case shadow-lg"
+          style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width }}
+          className="z-50 rounded-xl border border-black/10 bg-surface p-3 text-right normal-case shadow-lg"
         >
           <p className="mb-2 text-xs font-normal text-foreground/80">{text}</p>
           <Image
@@ -107,7 +147,7 @@ function HelpTip({
             alt={imageAlt}
             width={imageWidth}
             height={imageHeight}
-            className="w-full rounded-lg border border-black/10"
+            className="h-auto w-full rounded-lg border border-black/10"
           />
         </div>
       )}
@@ -422,6 +462,20 @@ export default function LotteryCalculator() {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-background px-4 py-3">
+          <p className="text-sm text-foreground/80">
+            רוצים לבדוק אם ההכנסה שלכם מתאימה להחזר הזה? זה בדיוק מה שאני
+            בודק בשיחה.
+          </p>
+          <a
+            href="https://wa.me/972507700322?text=%D7%94%D7%99%D7%99%20%D7%A6%27%D7%99%D7%A7%D7%95!%20%D7%A8%D7%90%D7%99%D7%AA%D7%99%20%D7%91%D7%9E%D7%97%D7%A9%D7%91%D7%95%D7%9F%20%D7%90%D7%AA%20%D7%94%D7%94%D7%97%D7%96%D7%A8%20%D7%94%D7%97%D7%95%D7%93%D7%A9%D7%99%20%D7%94%D7%A6%D7%A4%D7%95%D7%99%2C%20%D7%A8%D7%95%D7%A6%D7%94%20%D7%9C%D7%91%D7%93%D7%95%D7%A7%20%D7%90%D7%9D%20%D7%94%D7%94%D7%9B%D7%A0%D7%A1%D7%94%20%D7%A9%D7%9C%D7%99%20%D7%9E%D7%AA%D7%90%D7%99%D7%9E%D7%94%20%D7%9C%D7%9E%D7%A9%D7%9B%D7%A0%D7%AA%D7%94%20%D7%94%D7%96%D7%95."
+            target="_blank"
+            rel="noopener"
+            className="whitespace-nowrap rounded-full bg-button px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          >
+            בדיקה מול היועץ ב-WhatsApp
+          </a>
         </div>
       </section>
 
