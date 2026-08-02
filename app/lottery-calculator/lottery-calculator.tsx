@@ -16,10 +16,10 @@ const DEFAULT_SIZES: ApartmentSize[] = [
 ];
 
 // הנחות קבועות של המחשבון - לא משתנות בין הגרלות, ולכן לא ניתנות לעריכה.
+// גודל המרפסת והמחסן כן משתנים בין הגרלות ומוזנים על ידי המשתמש - רק
+// אופן החישוב שלהם (המכפיל ממחיר המ״ר) קבוע.
 const VAT_PERCENT = 18;
-const BALCONY_SQM = 12;
 const BALCONY_FACTOR = 0.5;
-const STORAGE_SQM = 6;
 const STORAGE_FACTOR = 0.25;
 const PARKING_PRICE = 70000;
 const PARKING_COUNT = 1;
@@ -62,6 +62,8 @@ export default function LotteryCalculator() {
   const [discountPercent, setDiscountPercent] = useState<number>(25);
   const [discountCap, setDiscountCap] = useState<number>(500000);
   const [referencePrice, setReferencePrice] = useState<number>(0);
+  const [balconySqm, setBalconySqm] = useState<number>(12);
+  const [storageSqm, setStorageSqm] = useState<number>(6);
   const [grant, setGrant] = useState<number>(0);
 
   // גדלי דירות
@@ -88,8 +90,8 @@ export default function LotteryCalculator() {
 
   const results = useMemo(() => {
     const parkingCost = PARKING_PRICE * PARKING_COUNT;
-    const balconySqmEquivalent = BALCONY_SQM * BALCONY_FACTOR;
-    const storageSqmEquivalent = STORAGE_SQM * STORAGE_FACTOR;
+    const balconySqmEquivalent = balconySqm * BALCONY_FACTOR;
+    const storageSqmEquivalent = storageSqm * STORAGE_FACTOR;
 
     return sizes.map((size) => {
       const calcSqm = size.mainSqm + balconySqmEquivalent + storageSqmEquivalent;
@@ -121,7 +123,15 @@ export default function LotteryCalculator() {
         netEquityAfterGrant,
       };
     });
-  }, [sizes, pricePerSqm, discountPercent, discountCap, grant]);
+  }, [
+    sizes,
+    pricePerSqm,
+    discountPercent,
+    discountCap,
+    balconySqm,
+    storageSqm,
+    grant,
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -155,6 +165,12 @@ export default function LotteryCalculator() {
               min={0}
             />
           </Field>
+          <Field label="גודל מרפסת (מחושב לפי 50% ממחיר מ״ר - קבוע)" suffix="מ״ר">
+            <NumberInput value={balconySqm} onChange={setBalconySqm} min={0} />
+          </Field>
+          <Field label="גודל מחסן (מחושב לפי 25% ממחיר מ״ר - קבוע)" suffix="מ״ר">
+            <NumberInput value={storageSqm} onChange={setStorageSqm} min={0} />
+          </Field>
         </div>
       </section>
 
@@ -170,12 +186,12 @@ export default function LotteryCalculator() {
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <ConstantItem label="מע״מ" value={`${VAT_PERCENT}%`} />
           <ConstantItem
-            label="מרפסת"
-            value={`${BALCONY_SQM} מ״ר × ${BALCONY_FACTOR * 100}% ממחיר מ״ר`}
+            label="מכפיל מרפסת"
+            value={`${BALCONY_FACTOR * 100}% ממחיר מ״ר`}
           />
           <ConstantItem
-            label="מחסן"
-            value={`${STORAGE_SQM} מ״ר × ${STORAGE_FACTOR * 100}% ממחיר מ״ר`}
+            label="מכפיל מחסן"
+            value={`${STORAGE_FACTOR * 100}% ממחיר מ״ר`}
           />
           <ConstantItem
             label="חניה"
