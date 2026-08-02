@@ -56,7 +56,7 @@ function calculateEquityAndMortgage(
   const recognizedValue =
     marketValue > MORTGAGE_PRICE_CAP
       ? Math.max(MORTGAGE_PRICE_CAP, contractPrice)
-      : contractPrice;
+      : marketValue;
   const mortgage = Math.max(
     Math.min(MORTGAGE_LTV * recognizedValue, contractPrice - minEquity),
     0
@@ -313,9 +313,9 @@ export default function LotteryCalculator() {
             הון עצמי ומשכנתא (לפי כללי מחיר למשתכן)
           </h2>
           <p className="text-xs text-foreground/50">
-            אם המחיר לפני הנחה (שווי השוק) עולה על 2.1 מיליון ₪: משכנתא של
-            עד 75% מהגבוה מבין 2.1 מיליון ₪ למחיר החוזה. אחרת: משכנתא של עד
-            75% ממחיר החוזה בפועל. בכפוף למינימום הון עצמי -{" "}
+            משכנתא של עד 75% משווי השוק (המחיר לפני הנחה); אם שווי השוק עולה
+            על 2.1 מיליון ₪, המשכנתא מבוססת על הגבוה מבין 2.1 מיליון ₪ למחיר
+            החוזה. בכפוף למינימום הון עצמי -{" "}
             {currency.format(MIN_EQUITY_WITH_GRANT)} ₪ אם יש מענק מקום,
             אחרת {currency.format(MIN_EQUITY_NO_GRANT)} ₪.
           </p>
