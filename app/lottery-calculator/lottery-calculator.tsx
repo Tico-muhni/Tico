@@ -279,11 +279,11 @@ export default function LotteryCalculator() {
             suffix="%"
             help={
               <HelpTip
-                text={'מתחת לכרטיס המחיר, בכרטיס "הערה", כתובה נוסחת ההנחה: הנמוך מבין אחוז מסוים (למשל 25%) לבין תקרה בש״ח. האחוז הוא המספר הזה.'}
-                imageSrc="/lottery-calculator/note-example.jpg"
-                imageAlt="דוגמה לכרטיס הערה עם נוסחת ההנחה באתר ההגרלה"
+                text={'מתחת לכרטיס המחיר, בכרטיס "הערה", כתובה נוסחת ההנחה: הנמוך מבין אחוז מסוים (למשל 25%, מסומן בירוק בתמונה) לבין תקרה בש״ח. האחוז הוא המספר הזה.'}
+                imageSrc="/lottery-calculator/note-percent-example.jpg"
+                imageAlt="דוגמה לכרטיס הערה עם אחוז ההנחה מסומן"
                 imageWidth={800}
-                imageHeight={620}
+                imageHeight={592}
               />
             }
           >
