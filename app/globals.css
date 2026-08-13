@@ -33,3 +33,10 @@ body {
   color: var(--brand-text);
   font-family: "Segoe UI", Arial, Helvetica, sans-serif;
 }
+
+@media print {
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+}

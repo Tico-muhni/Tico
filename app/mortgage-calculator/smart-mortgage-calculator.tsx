@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import { downloadExcel } from "./export";
 
 type EmploymentType = "employee" | "self-employed" | "other";
 type CreditConduct = "good" | "notes" | "restricted";
@@ -204,6 +205,10 @@ export default function SmartMortgageCalculator() {
   const [propertyType, setPropertyType] = useState("");
   const [propertyRegistration, setPropertyRegistration] = useState("");
   const [liquidEquity, setLiquidEquity] = useState<number>(0);
+  const [useManualFinancingPercent, setUseManualFinancingPercent] =
+    useState(false);
+  const [manualFinancingPercent, setManualFinancingPercent] =
+    useState<number>(70);
 
   // הוצאות נלוות
   const [lawyerFee, setLawyerFee] = useState<number>(0);
@@ -255,12 +260,14 @@ export default function SmartMortgageCalculator() {
       ? Math.max(existingPropertyValue - existingMortgageBalance, 0)
       : 0;
     const totalAvailableEquity = liquidEquity + netEquityFromSale;
-    const requiredMortgage = Math.max(
-      propertyValue - totalAvailableEquity,
-      0
-    );
-    const requiredFinancingPercent =
-      propertyValue > 0 ? (requiredMortgage / propertyValue) * 100 : 0;
+    const requiredMortgage = useManualFinancingPercent
+      ? propertyValue * (manualFinancingPercent / 100)
+      : Math.max(propertyValue - totalAvailableEquity, 0);
+    const requiredFinancingPercent = useManualFinancingPercent
+      ? manualFinancingPercent
+      : propertyValue > 0
+        ? (requiredMortgage / propertyValue) * 100
+        : 0;
 
     const totalAssociatedCosts =
       lawyerFee + brokerFee + purchaseTax + mortgageAdvisoryFee + otherFees;
@@ -372,6 +379,8 @@ export default function SmartMortgageCalculator() {
     existingPropertyValue,
     existingMortgageBalance,
     liquidEquity,
+    useManualFinancingPercent,
+    manualFinancingPercent,
     propertyValue,
     lawyerFee,
     brokerFee,
@@ -385,6 +394,85 @@ export default function SmartMortgageCalculator() {
 
   const status = ptiStatus(results.actualPtiPercent);
   const hasEnoughData = propertyValue > 0 && results.totalIncome > 0;
+
+  function handlePrintPdf() {
+    window.print();
+  }
+
+  function handleExportExcel() {
+    const active = hasSecondBorrower ? borrowers : [borrowers[0]];
+    const now = new Date();
+    const dateLabel = now.toLocaleDateString("he-IL");
+    // שם קובץ באנגלית בלבד - תווים בעברית ב-download attribute לא
+    // נתמכים באופן עקבי בדפדפנים ומובילים לשם קובץ גנרי ללא סיומת.
+    const fileDate = now.toISOString().slice(0, 10);
+
+    downloadExcel(`mortgage-calculator-${fileDate}.xls`, [
+      {
+        name: "סיכום",
+        rows: [
+          ["תאריך", dateLabel],
+          ["סוג עסקה", transactionType.label],
+          ["שווי נכס נרכש (₪)", propertyValue],
+          ["הון עצמי זמין (₪)", results.totalAvailableEquity],
+          ["תמהיל מסלולי ריבית", mix.label],
+          ["תקופת הלוואה (שנים)", termYears],
+          ["סה״כ הכנסה (₪)", results.totalIncome],
+          ["סה״כ התחייבויות (₪)", results.totalObligations],
+          ["הכנסה פנויה (₪)", results.disposableIncomeBeforeMortgage],
+          ["יחס החזר בפועל (%)", Number(results.actualPtiPercent.toFixed(1))],
+          ["משכנתה נדרשת לעסקה (₪)", results.requiredMortgage],
+          ["אחוז מימון נדרש (%)", Number(results.requiredFinancingPercent.toFixed(1))],
+          ["משכנתה מומלצת (₪)", results.recommendedMortgage],
+          ["משכנתה מקסימלית אפשרית (₪)", results.maxPossibleMortgage],
+          ["החזר חודשי מינימלי (₪)", Math.round(results.minMonthlyPayment)],
+          ["החזר חודשי רצוי (₪)", Math.round(results.desiredMonthlyPayment)],
+          ["החזר חודשי מקסימלי (₪)", Math.round(results.maxMonthlyPayment)],
+          ["סה״כ הוצאות נלוות (₪)", results.totalAssociatedCosts],
+          ["סה״כ מזומן נדרש בסגירת העסקה (₪)", Math.round(results.totalCashNeededAtClosing)],
+          [
+            "הכנסה פנויה אחרי ההחזר הרצוי (₪)",
+            Math.round(results.disposableIncomeAfterMortgage),
+          ],
+        ],
+      },
+      {
+        name: "יכולת מימון",
+        rows: [
+          ["תמהיל", "15 שנה", "20 שנה", "25 שנה", "30 שנה"],
+          ...results.capacityTable.map((row) => [
+            row.mix.label,
+            ...row.byTerm.map((amount) => Math.round(amount)),
+          ]),
+        ],
+      },
+      {
+        name: "פרטי לווים",
+        rows: [
+          [
+            "לווה",
+            "שם",
+            "מקצוע",
+            "סוג עיסוק",
+            "הכנסה נטו (₪)",
+            "התחייבויות (₪)",
+            "הכנסות נוספות (₪)",
+            "התנהלות אשראית",
+          ],
+          ...active.map((borrower, index) => [
+            `לווה ${index + 1}`,
+            borrower.name,
+            borrower.profession,
+            EMPLOYMENT_TYPE_LABELS[borrower.employmentType],
+            borrower.netIncome,
+            borrower.obligations,
+            borrower.additionalIncome,
+            CREDIT_CONDUCT_LABELS[borrower.creditConduct],
+          ]),
+        ],
+      },
+    ]);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -539,6 +627,26 @@ export default function SmartMortgageCalculator() {
             />
           </Field>
         </div>
+        <label className="flex items-center gap-2 text-sm text-foreground/80">
+          <input
+            type="checkbox"
+            checked={useManualFinancingPercent}
+            onChange={(e) => setUseManualFinancingPercent(e.target.checked)}
+            className="h-4 w-4"
+          />
+          הגדרת אחוז מימון נדרש באופן ידני (במקום חישוב לפי הון עצמי)
+        </label>
+        {useManualFinancingPercent && (
+          <Field label="אחוז מימון נדרש" suffix="%">
+            <NumberInput
+              value={manualFinancingPercent}
+              onChange={setManualFinancingPercent}
+              min={0}
+              max={100}
+              step={1}
+            />
+          </Field>
+        )}
       </section>
 
       <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
@@ -680,7 +788,9 @@ export default function SmartMortgageCalculator() {
                 <tbody>
                   <tr className="border-b border-black/5">
                     <td className="py-2 pr-2">
-                      נדרשת לעסקה (מחיר נכס בניכוי הון עצמי זמין)
+                      {useManualFinancingPercent
+                        ? "נדרשת לעסקה (לפי אחוז מימון ידני)"
+                        : "נדרשת לעסקה (מחיר נכס בניכוי הון עצמי זמין)"}
                     </td>
                     <td className="py-2">
                       {currency.format(results.requiredMortgage)} ₪ (
@@ -786,7 +896,24 @@ export default function SmartMortgageCalculator() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-background px-4 py-3">
+            <div className="flex flex-wrap items-center gap-3 print:hidden">
+              <button
+                type="button"
+                onClick={handlePrintPdf}
+                className="whitespace-nowrap rounded-full border border-primary px-5 py-2 text-sm font-medium text-primary transition-opacity hover:opacity-80"
+              >
+                ייצוא ל-PDF
+              </button>
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                className="whitespace-nowrap rounded-full border border-primary px-5 py-2 text-sm font-medium text-primary transition-opacity hover:opacity-80"
+              >
+                ייצוא לאקסל
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-background px-4 py-3 print:hidden">
               <p className="text-sm text-foreground/80">
                 רוצים לוודא שהנתונים והחישוב מתאימים למקרה הספציפי שלכם? זה
                 בדיוק מה שאני בודק בשיחה.
