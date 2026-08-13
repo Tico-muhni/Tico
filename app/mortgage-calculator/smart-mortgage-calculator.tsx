@@ -8,6 +8,7 @@ type CreditConduct = "good" | "notes" | "restricted";
 
 type Borrower = {
   name: string;
+  age: number;
   profession: string;
   employmentType: EmploymentType;
   netIncome: number;
@@ -18,6 +19,7 @@ type Borrower = {
 
 const EMPTY_BORROWER: Borrower = {
   name: "",
+  age: 35,
   profession: "",
   employmentType: "employee",
   netIncome: 0,
@@ -191,7 +193,6 @@ export default function SmartMortgageCalculator() {
   const [recognitionPercent, setRecognitionPercent] = useState<number>(
     DEFAULT_RECOGNITION_PERCENT
   );
-  const [age, setAge] = useState<number>(35);
 
   // פרטי הנכס
   const [transactionTypeId, setTransactionTypeId] = useState(
@@ -240,8 +241,12 @@ export default function SmartMortgageCalculator() {
 
   const mix = MIX_OPTIONS.find((option) => option.id === mixId) ?? MIX_OPTIONS[0];
 
+  const activeBorrowersForAge = hasSecondBorrower ? borrowers : [borrowers[0]];
+  const oldestBorrowerAge = Math.max(
+    ...activeBorrowersForAge.map((b) => b.age)
+  );
   const recommendedMaxTerm = clamp(
-    RETIREMENT_AGE_CAP - age,
+    RETIREMENT_AGE_CAP - oldestBorrowerAge,
     MIN_TERM_YEARS,
     MAX_TERM_YEARS
   );
@@ -307,19 +312,18 @@ export default function SmartMortgageCalculator() {
       0
     );
 
-    // טבלת יכולת מימון: לכל תמהיל ריבית ולכל תקופת הלוואה, המשכנתה
-    // המקסימלית שניתן לקבל במסגרת מדיניות העבודה (38% מההכנסה הפנויה),
-    // בכפוף גם לתקרת המימון (LTV) אם הוזן שווי נכס.
+    // טבלת יכולת מימון: לכל תמהיל ריבית ולכל תקופת הלוואה, יכולת ההחזר
+    // הגולמית לפי ההכנסה בלבד (מדיניות עבודה של 38% מההכנסה הפנויה) -
+    // ללא הגבלת LTV, כדי שההשוואה בין תמהילים ותקופות תהיה אמיתית ולא
+    // "שטוחה" בגלל תקרת המימון של נכס ספציפי (המוצגת בנפרד למטה).
     const capacityTable = MIX_OPTIONS.map((option) => ({
       mix: option,
-      byTerm: TERM_OPTIONS_YEARS.map((years) => {
-        const capacity = principalForBlendedPayment(
-          maxPaymentAtWorkingCap,
-          option.linkedShare,
-          years
-        );
-        return Math.max(Math.min(ltvCapAmount, capacity), 0);
-      }),
+      byTerm: TERM_OPTIONS_YEARS.map((years) =>
+        Math.max(
+          principalForBlendedPayment(maxPaymentAtWorkingCap, option.linkedShare, years),
+          0
+        )
+      ),
     }));
 
     const fundingShortfall = Math.max(
@@ -410,7 +414,7 @@ export default function SmartMortgageCalculator() {
     // נתמכים באופן עקבי בדפדפנים ומובילים לשם קובץ גנרי ללא סיומת.
     const fileDate = now.toISOString().slice(0, 10);
 
-    downloadExcel(`mortgage-calculator-${fileDate}.xls`, [
+    downloadExcel(`mortgage-calculator-${fileDate}.xlsx`, [
       {
         name: "סיכום",
         rows: [
@@ -455,6 +459,7 @@ export default function SmartMortgageCalculator() {
           [
             "לווה",
             "שם",
+            "גיל",
             "מקצוע",
             "סוג עיסוק",
             "הכנסה נטו (₪)",
@@ -465,6 +470,7 @@ export default function SmartMortgageCalculator() {
           ...active.map((borrower, index) => [
             `לווה ${index + 1}`,
             borrower.name,
+            borrower.age,
             borrower.profession,
             EMPLOYMENT_TYPE_LABELS[borrower.employmentType],
             borrower.netIncome,
@@ -486,9 +492,6 @@ export default function SmartMortgageCalculator() {
             הפרטים משמשים לחישוב בלבד ואינם נשמרים במערכת.
           </p>
         </div>
-        <Field label="גיל הלווה הבכיר" suffix="שנים">
-          <NumberInput value={age} onChange={setAge} min={18} max={90} />
-        </Field>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <BorrowerCard
             title="לווה 1"
@@ -840,10 +843,11 @@ export default function SmartMortgageCalculator() {
                 טבלת יכולת מימון - לפי תמהיל ותקופת הלוואה
               </h3>
               <p className="text-xs text-foreground/50">
-                המשכנתה המקסימלית האפשרית במסגרת מדיניות העבודה (
-                {WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה), לפי {LINKED_RATE_PERCENT}%
-                ריבית במסלול צמוד מדד ו-{UNLINKED_RATE_PERCENT}% במסלול לא
-                צמוד מדד, ובכפוף לתקרת המימון (LTV).
+                יכולת ההחזר לפי ההכנסה בלבד (מדיניות עבודה של{" "}
+                {WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה), לפי{" "}
+                {LINKED_RATE_PERCENT}% ריבית במסלול צמוד מדד ו-
+                {UNLINKED_RATE_PERCENT}% במסלול לא צמוד מדד - ללא הגבלת תקרת
+                המימון (LTV), שמוצגת בנפרד בטבלה שלמעלה.
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -971,6 +975,14 @@ function BorrowerCard({
         <TextInput
           value={borrower.name}
           onChange={(value) => onChange({ name: value })}
+        />
+      </Field>
+      <Field label="גיל" suffix="שנים">
+        <NumberInput
+          value={borrower.age}
+          onChange={(value) => onChange({ age: value })}
+          min={18}
+          max={90}
         />
       </Field>
       <Field label="מקצוע">
