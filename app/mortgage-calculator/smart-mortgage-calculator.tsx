@@ -2,6 +2,41 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 
+type EmploymentType = "employee" | "self-employed" | "other";
+type CreditConduct = "good" | "notes" | "restricted";
+
+type Borrower = {
+  name: string;
+  profession: string;
+  employmentType: EmploymentType;
+  netIncome: number;
+  obligations: number;
+  additionalIncome: number;
+  creditConduct: CreditConduct;
+};
+
+const EMPTY_BORROWER: Borrower = {
+  name: "",
+  profession: "",
+  employmentType: "employee",
+  netIncome: 0,
+  obligations: 0,
+  additionalIncome: 0,
+  creditConduct: "good",
+};
+
+const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
+  employee: "שכיר",
+  "self-employed": "עצמאי",
+  other: "אחר",
+};
+
+const CREDIT_CONDUCT_LABELS: Record<CreditConduct, string> = {
+  good: "תקינה",
+  notes: "יש הערות בדוח נתוני אשראי",
+  restricted: "קיימות הגבלות / עיכולים",
+};
+
 type TransactionType = {
   id: string;
   label: string;
@@ -86,10 +121,7 @@ function principalForMonthlyPayment(
 
 function ptiStatus(percent: number) {
   if (percent <= PRUDENT_PTI_PERCENT) {
-    return {
-      label: "בטווח המקובל על הבנקים",
-      className: "text-emerald-600",
-    };
+    return { label: "בטווח המקובל על הבנקים", className: "text-emerald-600" };
   }
   if (percent <= MAX_PTI_PERCENT) {
     return {
@@ -104,32 +136,55 @@ function ptiStatus(percent: number) {
 }
 
 export default function SmartMortgageCalculator() {
-  // פרטי לקוח וסוג עסקה
-  const [clientName, setClientName] = useState("");
-  const [age, setAge] = useState<number>(35);
-  const [transactionTypeId, setTransactionTypeId] = useState(
-    TRANSACTION_TYPES[0].id
-  );
-
-  // הכנסות
-  const [income1, setIncome1] = useState<number>(0);
+  const [borrowers, setBorrowers] = useState<[Borrower, Borrower]>([
+    { ...EMPTY_BORROWER },
+    { ...EMPTY_BORROWER },
+  ]);
   const [hasSecondBorrower, setHasSecondBorrower] = useState(false);
-  const [income2, setIncome2] = useState<number>(0);
-  const [additionalIncomeGross, setAdditionalIncomeGross] = useState<number>(0);
   const [recognitionPercent, setRecognitionPercent] = useState<number>(
     DEFAULT_RECOGNITION_PERCENT
   );
+  const [age, setAge] = useState<number>(35);
 
-  // התחייבויות
-  const [existingObligations, setExistingObligations] = useState<number>(0);
-
-  // פרטי העסקה והמשכנתה
+  // פרטי הנכס
+  const [transactionTypeId, setTransactionTypeId] = useState(
+    TRANSACTION_TYPES[0].id
+  );
+  const [hasExistingProperty, setHasExistingProperty] = useState(false);
+  const [existingPropertyValue, setExistingPropertyValue] = useState<number>(0);
+  const [existingMortgageBalance, setExistingMortgageBalance] =
+    useState<number>(0);
+  const [existingPropertyLocation, setExistingPropertyLocation] =
+    useState("");
   const [propertyValue, setPropertyValue] = useState<number>(0);
+  const [newPropertyLocation, setNewPropertyLocation] = useState("");
+  const [propertyType, setPropertyType] = useState("");
+  const [propertyRegistration, setPropertyRegistration] = useState("");
+  const [liquidEquity, setLiquidEquity] = useState<number>(0);
+
+  // הוצאות נלוות
+  const [lawyerFee, setLawyerFee] = useState<number>(0);
+  const [brokerFee, setBrokerFee] = useState<number>(0);
+  const [purchaseTax, setPurchaseTax] = useState<number>(0);
+  const [mortgageAdvisoryFee, setMortgageAdvisoryFee] = useState<number>(0);
+  const [otherFees, setOtherFees] = useState<number>(0);
+
+  // פרטי המשכנתה
   const [interestRate, setInterestRate] = useState<number>(
     DEFAULT_INTEREST_RATE_PERCENT
   );
   const [termYears, setTermYears] = useState<number>(MAX_TERM_YEARS);
   const [targetPtiPercent, setTargetPtiPercent] = useState<number>(35);
+
+  const [notes, setNotes] = useState("");
+
+  function updateBorrower(index: 0 | 1, patch: Partial<Borrower>) {
+    setBorrowers((prev) => {
+      const next = [...prev] as [Borrower, Borrower];
+      next[index] = { ...next[index], ...patch };
+      return next;
+    });
+  }
 
   const transactionType =
     TRANSACTION_TYPES.find((type) => type.id === transactionTypeId) ??
@@ -142,68 +197,127 @@ export default function SmartMortgageCalculator() {
   );
 
   const results = useMemo(() => {
-    const totalIncome =
-      income1 +
-      (hasSecondBorrower ? income2 : 0) +
-      additionalIncomeGross * (recognitionPercent / 100);
-    const totalObligations = existingObligations;
+    const active = hasSecondBorrower ? borrowers : [borrowers[0]];
+    const totalIncome = active.reduce(
+      (sum, b) =>
+        sum + b.netIncome + b.additionalIncome * (recognitionPercent / 100),
+      0
+    );
+    const totalObligations = active.reduce(
+      (sum, b) => sum + b.obligations,
+      0
+    );
     const disposableIncomeBeforeMortgage = totalIncome - totalObligations;
 
+    const netEquityFromSale = hasExistingProperty
+      ? Math.max(existingPropertyValue - existingMortgageBalance, 0)
+      : 0;
+    const totalAvailableEquity = liquidEquity + netEquityFromSale;
+    const requiredMortgage = Math.max(
+      propertyValue - totalAvailableEquity,
+      0
+    );
+    const requiredFinancingPercent =
+      propertyValue > 0 ? (requiredMortgage / propertyValue) * 100 : 0;
+
+    const totalAssociatedCosts =
+      lawyerFee + brokerFee + purchaseTax + mortgageAdvisoryFee + otherFees;
+
     const ltvCapAmount = propertyValue * transactionType.ltv;
+
+    const maxPaymentAtCeiling = Math.max(
+      totalIncome * (MAX_PTI_PERCENT / 100) - totalObligations,
+      0
+    );
+    const capacityAtCeiling = principalForMonthlyPayment(
+      maxPaymentAtCeiling,
+      interestRate,
+      termYears
+    );
+    const maxPossibleMortgage = Math.max(
+      Math.min(ltvCapAmount, capacityAtCeiling),
+      0
+    );
 
     const maxPaymentAtTarget = Math.max(
       totalIncome * (targetPtiPercent / 100) - totalObligations,
       0
     );
-    const capacityCapAmount = principalForMonthlyPayment(
+    const capacityAtTarget = principalForMonthlyPayment(
       maxPaymentAtTarget,
       interestRate,
       termYears
     );
-
-    const maxMortgage = Math.max(
-      Math.min(ltvCapAmount, capacityCapAmount),
+    const recommendedMortgage = Math.max(
+      Math.min(ltvCapAmount, capacityAtTarget),
       0
     );
-    const bindingConstraint =
-      capacityCapAmount < ltvCapAmount
-        ? "יכולת ההחזר לפי ההכנסה"
-        : "אחוז המימון המקסימלי (LTV) לפי סוג העסקה";
 
-    const requiredEquity = Math.max(propertyValue - maxMortgage, 0);
-    const monthlyPaymentForMax = monthlyPaymentForPrincipal(
-      maxMortgage,
+    const fundingShortfall = Math.max(
+      requiredMortgage - maxPossibleMortgage,
+      0
+    );
+    const grantedMortgage = Math.min(requiredMortgage, maxPossibleMortgage);
+    const totalCashNeededAtClosing =
+      propertyValue - grantedMortgage + totalAssociatedCosts;
+
+    const minMonthlyPayment = monthlyPaymentForPrincipal(
+      requiredMortgage,
       interestRate,
       termYears
     );
+    const desiredMonthlyPayment = monthlyPaymentForPrincipal(
+      recommendedMortgage,
+      interestRate,
+      termYears
+    );
+    const maxMonthlyPayment = monthlyPaymentForPrincipal(
+      maxPossibleMortgage,
+      interestRate,
+      termYears
+    );
+
     const actualPtiPercent =
       totalIncome > 0
-        ? ((monthlyPaymentForMax + totalObligations) / totalIncome) * 100
+        ? ((desiredMonthlyPayment + totalObligations) / totalIncome) * 100
         : 0;
     const disposableIncomeAfterMortgage =
-      disposableIncomeBeforeMortgage - monthlyPaymentForMax;
+      disposableIncomeBeforeMortgage - desiredMonthlyPayment;
 
     return {
       totalIncome,
       totalObligations,
       disposableIncomeBeforeMortgage,
+      netEquityFromSale,
+      totalAvailableEquity,
+      requiredMortgage,
+      requiredFinancingPercent,
+      totalAssociatedCosts,
       ltvCapAmount,
-      capacityCapAmount,
-      maxMortgage,
-      bindingConstraint,
-      requiredEquity,
-      monthlyPaymentForMax,
+      maxPossibleMortgage,
+      recommendedMortgage,
+      fundingShortfall,
+      totalCashNeededAtClosing,
+      minMonthlyPayment,
+      desiredMonthlyPayment,
+      maxMonthlyPayment,
       actualPtiPercent,
       disposableIncomeAfterMortgage,
     };
   }, [
-    income1,
+    borrowers,
     hasSecondBorrower,
-    income2,
-    additionalIncomeGross,
     recognitionPercent,
-    existingObligations,
+    hasExistingProperty,
+    existingPropertyValue,
+    existingMortgageBalance,
+    liquidEquity,
     propertyValue,
+    lawyerFee,
+    brokerFee,
+    purchaseTax,
+    mortgageAdvisoryFee,
+    otherFees,
     transactionType,
     targetPtiPercent,
     interestRate,
@@ -217,119 +331,193 @@ export default function SmartMortgageCalculator() {
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
         <div>
-          <h2 className="text-lg font-semibold text-primary">
-            פרטי לקוח וסוג עסקה
-          </h2>
+          <h2 className="text-lg font-semibold text-primary">פרטי לווים</h2>
           <p className="text-xs text-foreground/50">
             הפרטים משמשים לחישוב בלבד ואינם נשמרים במערכת.
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="שם הלקוח (אופציונלי)">
-            <input
-              type="text"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              className="w-full rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-primary"
+        <Field label="גיל הלווה הבכיר" suffix="שנים">
+          <NumberInput value={age} onChange={setAge} min={18} max={90} />
+        </Field>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <BorrowerCard
+            title="לווה 1"
+            borrower={borrowers[0]}
+            onChange={(patch) => updateBorrower(0, patch)}
+          />
+          {hasSecondBorrower ? (
+            <BorrowerCard
+              title="לווה 2"
+              borrower={borrowers[1]}
+              onChange={(patch) => updateBorrower(1, patch)}
             />
-          </Field>
-          <Field label="גיל הלווה הבכיר" suffix="שנים">
-            <NumberInput value={age} onChange={setAge} min={18} max={90} />
-          </Field>
-        </div>
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-foreground/80">
-            סוג העסקה
-          </span>
-          <div className="flex flex-col gap-2">
-            {TRANSACTION_TYPES.map((type) => (
-              <label
-                key={type.id}
-                className="flex items-center gap-2 text-sm text-foreground/80"
-              >
+          ) : (
+            <div className="flex items-start">
+              <label className="flex items-center gap-2 text-sm text-foreground/80">
                 <input
-                  type="radio"
-                  name="transactionType"
-                  checked={transactionTypeId === type.id}
-                  onChange={() => setTransactionTypeId(type.id)}
+                  type="checkbox"
+                  checked={hasSecondBorrower}
+                  onChange={(e) => setHasSecondBorrower(e.target.checked)}
                   className="h-4 w-4"
                 />
-                <span>
-                  {type.label}{" "}
-                  <span className="text-foreground/50">({type.note})</span>
-                </span>
+                יש לווה נוסף
               </label>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-primary">הכנסות</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="הכנסה חודשית נטו - לווה 1" suffix="₪">
-            <NumberInput value={income1} onChange={setIncome1} min={0} />
-          </Field>
-          <label className="flex items-center gap-2 self-end pb-2 text-sm text-foreground/80">
-            <input
-              type="checkbox"
-              checked={hasSecondBorrower}
-              onChange={(e) => setHasSecondBorrower(e.target.checked)}
-              className="h-4 w-4"
-            />
-            יש לווה נוסף
-          </label>
-          {hasSecondBorrower && (
-            <Field label="הכנסה חודשית נטו - לווה 2" suffix="₪">
-              <NumberInput value={income2} onChange={setIncome2} min={0} />
-            </Field>
+            </div>
           )}
-          <Field label="הכנסות נוספות (ברוטו - שכירות, בונוס וכו')" suffix="₪">
-            <NumberInput
-              value={additionalIncomeGross}
-              onChange={setAdditionalIncomeGross}
-              min={0}
-            />
-          </Field>
-          <Field label="אחוז הכרה בהכנסות הנוספות" suffix="%">
-            <NumberInput
-              value={recognitionPercent}
-              onChange={setRecognitionPercent}
-              min={0}
-              max={100}
-            />
-          </Field>
         </div>
-      </section>
-
-      <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-primary">
-          התחייבויות חודשיות קיימות
-        </h2>
-        <Field
-          label="סך החזרים חודשיים (הלוואות, כרטיסי אשראי, מזונות וכו')"
-          suffix="₪"
-        >
+        {hasSecondBorrower && (
+          <button
+            type="button"
+            onClick={() => setHasSecondBorrower(false)}
+            className="self-start text-xs text-foreground/50 underline hover:text-primary"
+          >
+            הסרת לווה נוסף
+          </button>
+        )}
+        <Field label="אחוז הכרה בהכנסות הנוספות" suffix="%">
           <NumberInput
-            value={existingObligations}
-            onChange={setExistingObligations}
+            value={recognitionPercent}
+            onChange={setRecognitionPercent}
             min={0}
+            max={100}
           />
         </Field>
       </section>
 
       <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-primary">
-          פרטי העסקה והמשכנתה
-        </h2>
+        <h2 className="text-lg font-semibold text-primary">פרטי הנכס</h2>
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-foreground/80">
+            סיווג לצורך אחוז מימון מקסימלי (LTV)
+          </span>
+          {TRANSACTION_TYPES.map((type) => (
+            <label
+              key={type.id}
+              className="flex items-center gap-2 text-sm text-foreground/80"
+            >
+              <input
+                type="radio"
+                name="transactionType"
+                checked={transactionTypeId === type.id}
+                onChange={() => setTransactionTypeId(type.id)}
+                className="h-4 w-4"
+              />
+              <span>
+                {type.label}{" "}
+                <span className="text-foreground/50">({type.note})</span>
+              </span>
+            </label>
+          ))}
+        </div>
+
+        <label className="flex items-center gap-2 text-sm text-foreground/80">
+          <input
+            type="checkbox"
+            checked={hasExistingProperty}
+            onChange={(e) => setHasExistingProperty(e.target.checked)}
+            className="h-4 w-4"
+          />
+          יש נכס קיים למכירה (משפרי דיור)
+        </label>
+        {hasExistingProperty && (
+          <div className="grid grid-cols-1 gap-4 rounded-xl bg-background p-4 sm:grid-cols-3">
+            <Field label="שווי נכס קיים" suffix="₪">
+              <NumberInput
+                value={existingPropertyValue}
+                onChange={setExistingPropertyValue}
+                min={0}
+              />
+            </Field>
+            <Field label="משכנתה קיימת (יתרה)" suffix="₪">
+              <NumberInput
+                value={existingMortgageBalance}
+                onChange={setExistingMortgageBalance}
+                min={0}
+              />
+            </Field>
+            <Field label="מיקום הנכס הקיים">
+              <TextInput
+                value={existingPropertyLocation}
+                onChange={setExistingPropertyLocation}
+              />
+            </Field>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="שווי הנכס / מחיר הרכישה" suffix="₪">
+          <Field label="שווי נכס נרכש / מחיר רכישה" suffix="₪">
             <NumberInput
               value={propertyValue}
               onChange={setPropertyValue}
               min={0}
             />
           </Field>
+          <Field label="מיקום הנכס הנרכש">
+            <TextInput
+              value={newPropertyLocation}
+              onChange={setNewPropertyLocation}
+            />
+          </Field>
+          <Field label="סוג הנכס">
+            <TextInput
+              value={propertyType}
+              onChange={setPropertyType}
+              placeholder="דירה / בית פרטי / מסחרי"
+            />
+          </Field>
+          <Field label="רישום הנכס">
+            <TextInput
+              value={propertyRegistration}
+              onChange={setPropertyRegistration}
+              placeholder="טאבו / מנהל / חכירה"
+            />
+          </Field>
+          <Field label="הון עצמי נזיל (חסכונות)" suffix="₪">
+            <NumberInput
+              value={liquidEquity}
+              onChange={setLiquidEquity}
+              min={0}
+            />
+          </Field>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-primary">הוצאות נלוות</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Field label="עו״ד" suffix="₪">
+            <NumberInput value={lawyerFee} onChange={setLawyerFee} min={0} />
+          </Field>
+          <Field label="מתווך" suffix="₪">
+            <NumberInput value={brokerFee} onChange={setBrokerFee} min={0} />
+          </Field>
+          <Field label="מס רכישה" suffix="₪">
+            <NumberInput
+              value={purchaseTax}
+              onChange={setPurchaseTax}
+              min={0}
+            />
+          </Field>
+          <Field label="ייעוץ משכנתאות" suffix="₪">
+            <NumberInput
+              value={mortgageAdvisoryFee}
+              onChange={setMortgageAdvisoryFee}
+              min={0}
+            />
+          </Field>
+          <Field label="אחר" suffix="₪">
+            <NumberInput value={otherFees} onChange={setOtherFees} min={0} />
+          </Field>
+          <ResultCard
+            label="סה״כ הוצאות נלוות"
+            value={results.totalAssociatedCosts}
+          />
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-primary">פרטי המשכנתה</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="ריבית שנתית משוערת" suffix="%">
             <NumberInput
               value={interestRate}
@@ -352,9 +540,7 @@ export default function SmartMortgageCalculator() {
           לפי הגיל שהוזן, משך ההלוואה המומלץ עד גיל {RETIREMENT_AGE_CAP} הוא{" "}
           {recommendedMaxTerm} שנים.
         </p>
-        <Field
-          label={`יחס החזר מהכנסה יעד: ${targetPtiPercent}%`}
-        >
+        <Field label={`יחס החזר מהכנסה רצוי: ${targetPtiPercent}%`}>
           <input
             type="range"
             min={10}
@@ -374,9 +560,7 @@ export default function SmartMortgageCalculator() {
       </section>
 
       <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-primary">
-          תוצאות{clientName ? ` עבור ${clientName}` : ""}
-        </h2>
+        <h2 className="text-lg font-semibold text-primary">תוצאות ותמהיל</h2>
         {!hasEnoughData ? (
           <p className="text-sm text-foreground/60">
             הזינו שווי נכס והכנסות כדי לראות תוצאות.
@@ -384,75 +568,17 @@ export default function SmartMortgageCalculator() {
         ) : (
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <ResultCard label="סך הכנסות מוכרות" value={results.totalIncome} />
+              <ResultCard label="סה״כ הכנסה" value={results.totalIncome} />
               <ResultCard
-                label="סך התחייבויות חודשיות"
+                label="סה״כ התחייבויות"
                 value={results.totalObligations}
               />
               <ResultCard
-                label="הכנסה פנויה (לפני משכנתה חדשה)"
+                label="הכנסה פנויה"
                 value={results.disposableIncomeBeforeMortgage}
               />
-              <ResultCard
-                label="הכנסה פנויה (אחרי החזר המשכנתה)"
-                value={results.disposableIncomeAfterMortgage}
-                warn={results.disposableIncomeAfterMortgage < 0}
-              />
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[520px] border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-black/10 text-right text-foreground/70">
-                    <th className="py-2 pr-2">מגבלה</th>
-                    <th className="py-2">משכנתה מקסימלית לפיה</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-black/5">
-                    <td className="py-2 pr-2">
-                      אחוז מימון (LTV) - {transactionType.label} (
-                      {Math.round(transactionType.ltv * 100)}%)
-                    </td>
-                    <td className="py-2">
-                      {currency.format(results.ltvCapAmount)} ₪
-                    </td>
-                  </tr>
-                  <tr className="border-b border-black/5">
-                    <td className="py-2 pr-2">
-                      יכולת החזר (יעד {targetPtiPercent}% מההכנסה)
-                    </td>
-                    <td className="py-2">
-                      {currency.format(results.capacityCapAmount)} ₪
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div className="rounded-xl bg-background px-4 py-4">
-              <p className="text-xs text-foreground/50">
-                הגורם הקובע: {results.bindingConstraint}
-              </p>
-              <p className="mt-1 text-2xl font-semibold text-primary">
-                {currency.format(results.maxMortgage)} ₪
-              </p>
-              <p className="text-xs text-foreground/50">משכנתה מקסימלית</p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <ResultCard
-                label="הון עצמי נדרש"
-                value={results.requiredEquity}
-              />
-              <ResultCard
-                label="החזר חודשי משוער"
-                value={results.monthlyPaymentForMax}
-              />
               <div className="flex flex-col gap-1 rounded-xl bg-background px-4 py-3">
-                <span className="text-xs text-foreground/50">
-                  יחס החזר מהכנסה בפועל
-                </span>
+                <span className="text-xs text-foreground/50">יחס החזר</span>
                 <span className={`text-lg font-semibold ${status.className}`}>
                   {results.actualPtiPercent.toFixed(1)}%
                 </span>
@@ -460,6 +586,89 @@ export default function SmartMortgageCalculator() {
                   {status.label}
                 </span>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <ResultCard
+                label="החזר חודשי מינימלי (למשכנתה הנדרשת לעסקה)"
+                value={results.minMonthlyPayment}
+              />
+              <ResultCard
+                label="החזר חודשי רצוי"
+                value={results.desiredMonthlyPayment}
+              />
+              <ResultCard
+                label="החזר חודשי מקסימלי (תקרת 50%)"
+                value={results.maxMonthlyPayment}
+              />
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[520px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-black/10 text-right text-foreground/70">
+                    <th className="py-2 pr-2">משכנתה</th>
+                    <th className="py-2">סכום</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-black/5">
+                    <td className="py-2 pr-2">
+                      נדרשת לעסקה (מחיר נכס בניכוי הון עצמי זמין)
+                    </td>
+                    <td className="py-2">
+                      {currency.format(results.requiredMortgage)} ₪ (
+                      {results.requiredFinancingPercent.toFixed(0)}% מימון)
+                    </td>
+                  </tr>
+                  <tr className="border-b border-black/5">
+                    <td className="py-2 pr-2">
+                      מומלצת (לפי יחס החזר רצוי {targetPtiPercent}%)
+                    </td>
+                    <td className="py-2">
+                      {currency.format(results.recommendedMortgage)} ₪
+                    </td>
+                  </tr>
+                  <tr className="border-b border-black/5">
+                    <td className="py-2 pr-2">
+                      מקסימלית אפשרית ({transactionType.label}, תקרת LTV{" "}
+                      {Math.round(transactionType.ltv * 100)}% / תקרת החזר{" "}
+                      {MAX_PTI_PERCENT}%)
+                    </td>
+                    <td className="py-2 font-semibold text-primary">
+                      {currency.format(results.maxPossibleMortgage)} ₪
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {results.fundingShortfall > 0 ? (
+              <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                ⚠️ חסר מימון של {currency.format(results.fundingShortfall)} ₪
+                - המשכנתה הנדרשת חורגת מהתקרה המקסימלית האפשרית. נדרש הון עצמי
+                נוסף, הפחתת שווי הנכס, או הארכת תקופת ההלוואה.
+              </div>
+            ) : (
+              <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                ✅ הסכום הנדרש לעסקה מכוסה במסגרת תקרת המימון המקסימלית.
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <ResultCard
+                label="הון עצמי זמין (נזיל + ממכירת נכס קיים)"
+                value={results.totalAvailableEquity}
+              />
+              <ResultCard
+                label="סה״כ מזומן נדרש בסגירת העסקה"
+                value={results.totalCashNeededAtClosing}
+              />
+              <ResultCard
+                label="הכנסה פנויה אחרי ההחזר הרצוי"
+                value={results.disposableIncomeAfterMortgage}
+                warn={results.disposableIncomeAfterMortgage < 0}
+              />
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-background px-4 py-3">
@@ -482,11 +691,111 @@ export default function SmartMortgageCalculator() {
         )}
       </section>
 
+      <section className="flex flex-col gap-2 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-primary">הערות</h2>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={4}
+          className="w-full rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-primary"
+        />
+      </section>
+
       <p className="text-xs text-foreground/50">
         המחשבון הוא כלי עזר להערכה בלבד ואינו מהווה ייעוץ פיננסי או התחייבות
         למתן אשראי. אישור המשכנתה בפועל, אחוז המימון וההחזר החודשי נתונים
         לשיקול דעת הבנק ולבדיקת יכולת ההחזר בפועל מול תלוש השכר.
       </p>
+    </div>
+  );
+}
+
+function BorrowerCard({
+  title,
+  borrower,
+  onChange,
+}: {
+  title: string;
+  borrower: Borrower;
+  onChange: (patch: Partial<Borrower>) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-xl bg-background p-4">
+      <h3 className="text-sm font-semibold text-foreground/80">{title}</h3>
+      <Field label="שם">
+        <TextInput
+          value={borrower.name}
+          onChange={(value) => onChange({ name: value })}
+        />
+      </Field>
+      <Field label="מקצוע">
+        <TextInput
+          value={borrower.profession}
+          onChange={(value) => onChange({ profession: value })}
+        />
+      </Field>
+      <Field label="סוג עיסוק">
+        <select
+          value={borrower.employmentType}
+          onChange={(e) =>
+            onChange({ employmentType: e.target.value as EmploymentType })
+          }
+          className="w-full rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-primary"
+        >
+          {Object.entries(EMPLOYMENT_TYPE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </Field>
+      {borrower.employmentType === "self-employed" && (
+        <p className="text-xs text-foreground/50">
+          לעצמאים: יש להזין הכנסה נטו ממוצעת כפי שתוכר על ידי הבנק (בד״כ
+          ממוצע 2-3 שנים אחרונות).
+        </p>
+      )}
+      <Field label="הכנסה נטו" suffix="₪">
+        <NumberInput
+          value={borrower.netIncome}
+          onChange={(value) => onChange({ netIncome: value })}
+          min={0}
+        />
+      </Field>
+      <Field label="התחייבויות חודשיות" suffix="₪">
+        <NumberInput
+          value={borrower.obligations}
+          onChange={(value) => onChange({ obligations: value })}
+          min={0}
+        />
+      </Field>
+      <Field label="הכנסות נוספות (ברוטו)" suffix="₪">
+        <NumberInput
+          value={borrower.additionalIncome}
+          onChange={(value) => onChange({ additionalIncome: value })}
+          min={0}
+        />
+      </Field>
+      <Field label="התנהלות אשראית">
+        <select
+          value={borrower.creditConduct}
+          onChange={(e) =>
+            onChange({ creditConduct: e.target.value as CreditConduct })
+          }
+          className="w-full rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-primary"
+        >
+          {Object.entries(CREDIT_CONDUCT_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </Field>
+      {borrower.creditConduct !== "good" && (
+        <p className="text-xs text-amber-600">
+          ⚠️ ייתכן שהדבר ישפיע על אישור העסקה בבנק, מעבר לחישוב המספרי.
+        </p>
+      )}
     </div>
   );
 }
@@ -557,6 +866,26 @@ function NumberInput({
       step={step ?? 1}
       dir="ltr"
       className="w-full rounded-lg border border-black/10 px-3 py-2 text-left outline-none focus:border-primary"
+    />
+  );
+}
+
+function TextInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-primary"
     />
   );
 }
