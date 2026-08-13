@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import SmartMortgageCalculator from "./smart-mortgage-calculator";
 
@@ -7,9 +8,20 @@ export const metadata: Metadata = {
     "הזינו נתוני הכנסות, התחייבויות וסוג עסקה, וקבלו חישוב אוטומטי של יחס החזר, סך הכנסות, הכנסה פנויה ומשכנתה מקסימלית.",
 };
 
+// הצבע הירוק של המותג (#2E8B57) - כמו בכל שאר האתר (login/register/admin/rtm) -
+// מוגדר כאן במקום ה-primary/button הישנים (כחול/אדום) שהגיעו מהמחשבון
+// הישן ואינם צבעי המותג בפועל.
+const BRAND_STYLE = {
+  "--brand-primary": "#2E8B57",
+  "--brand-button": "#2E8B57",
+} as CSSProperties;
+
 export default function MortgageCalculatorPage() {
   return (
-    <div className="flex flex-1 justify-center bg-background px-4 py-10">
+    <div
+      className="flex flex-1 justify-center bg-background px-4 py-10"
+      style={BRAND_STYLE}
+    >
       <main className="flex w-full max-w-4xl flex-col gap-6">
         <header className="flex flex-col gap-2 text-center">
           <h1 className="text-2xl font-semibold text-primary">
