@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { rtmBriefs } from "@/drizzle/schema";
+import { rtmBriefs, rtmNewsItems } from "@/drizzle/schema";
 import { currentUser } from "@/lib/auth";
 import {
   scanForCandidates,
@@ -64,6 +64,22 @@ export async function generateBriefAction(
       success: null,
     };
   }
+}
+
+/**
+ * Remove an article from the board. Deleting the news item cascades to its
+ * brief (if one was already made), so this clears the whole card. Scoped to
+ * the current advisor so one user can't delete another's items.
+ */
+export async function deleteNewsItemAction(newsItemId: string) {
+  const user = await currentUser();
+  if (!user) return;
+  await db
+    .delete(rtmNewsItems)
+    .where(
+      and(eq(rtmNewsItems.id, newsItemId), eq(rtmNewsItems.userId, user.id))
+    );
+  revalidatePath("/admin/rtm");
 }
 
 export async function setRtmBriefStatusAction(
