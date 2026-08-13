@@ -65,15 +65,42 @@ const TRANSACTION_TYPES: TransactionType[] = [
   },
 ];
 
-// כללי המימון וההחזר לפי הוראת ניהול בנקאי תקין 329 של בנק ישראל:
+// כללי המימון וההחזר:
 // (1) אחוז המימון המקסימלי (LTV) תלוי בסוג העסקה - ר' TRANSACTION_TYPES.
-// (2) יחס ההחזר מהכנסה (סך כל ההחזרים החודשיים, כולל המשכנתה החדשה,
-//     חלקי ההכנסה הפנויה נטו) - עד 40% נחשב מקובל על הבנקים ללא הגבלות
-//     מיוחדות; בין 40% ל-50% מותר בכפוף למגבלות נוספות; מעל 50% אסור.
-const PRUDENT_PTI_PERCENT = 40;
-const MAX_PTI_PERCENT = 50;
+// (2) הכנסה פנויה = הכנסה נטו פחות התחייבויות קיימות (אם יש).
+// (3) יחס החזר - מדיניות העבודה: עד 38% מההכנסה הפנויה. התקרה
+//     החוקית לפי הוראת ניהול בנקאי תקין 329 של בנק ישראל היא 50%
+//     מההכנסה (מוצגת בנפרד, לצורך התייחסות בלבד - לא המדיניות המומלצת).
+const WORKING_PTI_CAP_PERCENT = 38;
+const LEGAL_MAX_PTI_PERCENT = 50;
 
-const DEFAULT_INTEREST_RATE_PERCENT = 5.3;
+// יכולת המימון מחושבת לפי תמהיל בין שני מסלולי ריבית ממוצעים - צמוד
+// מדד ולא צמוד מדד - ולפי תקופות הלוואה סטנדרטיות.
+const LINKED_RATE_PERCENT = 3;
+const UNLINKED_RATE_PERCENT = 4.7;
+const TERM_OPTIONS_YEARS = [15, 20, 25, 30] as const;
+
+type MixOption = {
+  id: string;
+  label: string;
+  linkedShare: number;
+};
+
+const MIX_OPTIONS: MixOption[] = [
+  { id: "linked-100", label: "100% צמוד מדד", linkedShare: 1 },
+  { id: "unlinked-100", label: "100% לא צמוד מדד", linkedShare: 0 },
+  {
+    id: "linked-34",
+    label: "34% צמוד מדד + 66% לא צמוד מדד",
+    linkedShare: 0.34,
+  },
+  {
+    id: "linked-66",
+    label: "34% לא צמוד מדד + 66% צמוד מדד",
+    linkedShare: 0.66,
+  },
+];
+
 const DEFAULT_RECOGNITION_PERCENT = 70;
 const MIN_TERM_YEARS = 4;
 const MAX_TERM_YEARS = 30;
@@ -106,31 +133,47 @@ function monthlyPaymentForPrincipal(
   );
 }
 
-// הקרן המקסימלית שניתן לקבל עבור החזר חודשי נתון (היפוך שיטת שפיצר).
-function principalForMonthlyPayment(
+// ההחזר החודשי הממוצע-משוקלל עבור כל שקל קרן, לפי תמהיל בין מסלול
+// צמוד מדד (LINKED_RATE_PERCENT) למסלול לא צמוד מדד (UNLINKED_RATE_PERCENT).
+function blendedPaymentFactor(linkedShare: number, years: number) {
+  const linkedFactor = monthlyPaymentForPrincipal(1, LINKED_RATE_PERCENT, years);
+  const unlinkedFactor = monthlyPaymentForPrincipal(
+    1,
+    UNLINKED_RATE_PERCENT,
+    years
+  );
+  return linkedShare * linkedFactor + (1 - linkedShare) * unlinkedFactor;
+}
+
+function principalForBlendedPayment(
   payment: number,
-  annualRatePercent: number,
+  linkedShare: number,
   years: number
 ) {
-  if (payment <= 0) return 0;
-  const monthlyRate = annualRatePercent / 100 / 12;
-  const numPayments = years * 12;
-  if (monthlyRate === 0) return payment * numPayments;
-  return (payment * (1 - Math.pow(1 + monthlyRate, -numPayments))) / monthlyRate;
+  const factor = blendedPaymentFactor(linkedShare, years);
+  return factor > 0 ? payment / factor : 0;
+}
+
+function paymentForBlendedPrincipal(
+  principal: number,
+  linkedShare: number,
+  years: number
+) {
+  return principal * blendedPaymentFactor(linkedShare, years);
 }
 
 function ptiStatus(percent: number) {
-  if (percent <= PRUDENT_PTI_PERCENT) {
-    return { label: "בטווח המקובל על הבנקים", className: "text-emerald-600" };
+  if (percent <= WORKING_PTI_CAP_PERCENT) {
+    return { label: "בהתאם למדיניות העבודה (38%)", className: "text-emerald-600" };
   }
-  if (percent <= MAX_PTI_PERCENT) {
+  if (percent <= LEGAL_MAX_PTI_PERCENT) {
     return {
-      label: "מותר בכפוף למגבלות נוספות (הוראה 329)",
+      label: "מעל מדיניות העבודה, אך בתוך התקרה החוקית (הוראה 329)",
       className: "text-amber-600",
     };
   }
   return {
-    label: "חורג מהתקרה המותרת לפי הוראה 329",
+    label: "חורג מהתקרה החוקית לפי הוראה 329",
     className: "text-red-600",
   };
 }
@@ -170,11 +213,8 @@ export default function SmartMortgageCalculator() {
   const [otherFees, setOtherFees] = useState<number>(0);
 
   // פרטי המשכנתה
-  const [interestRate, setInterestRate] = useState<number>(
-    DEFAULT_INTEREST_RATE_PERCENT
-  );
-  const [termYears, setTermYears] = useState<number>(MAX_TERM_YEARS);
-  const [targetPtiPercent, setTargetPtiPercent] = useState<number>(35);
+  const [mixId, setMixId] = useState<string>(MIX_OPTIONS[2].id);
+  const [termYears, setTermYears] = useState<number>(30);
 
   const [notes, setNotes] = useState("");
 
@@ -189,6 +229,8 @@ export default function SmartMortgageCalculator() {
   const transactionType =
     TRANSACTION_TYPES.find((type) => type.id === transactionTypeId) ??
     TRANSACTION_TYPES[0];
+
+  const mix = MIX_OPTIONS.find((option) => option.id === mixId) ?? MIX_OPTIONS[0];
 
   const recommendedMaxTerm = clamp(
     RETIREMENT_AGE_CAP - age,
@@ -223,35 +265,52 @@ export default function SmartMortgageCalculator() {
     const totalAssociatedCosts =
       lawyerFee + brokerFee + purchaseTax + mortgageAdvisoryFee + otherFees;
 
-    const ltvCapAmount = propertyValue * transactionType.ltv;
+    const ltvCapAmount = propertyValue > 0 ? propertyValue * transactionType.ltv : Infinity;
 
-    const maxPaymentAtCeiling = Math.max(
-      totalIncome * (MAX_PTI_PERCENT / 100) - totalObligations,
+    // הכנסה פנויה * 38% - מדיניות העבודה (סעיף 2).
+    const maxPaymentAtWorkingCap = Math.max(
+      disposableIncomeBeforeMortgage * (WORKING_PTI_CAP_PERCENT / 100),
       0
     );
-    const capacityAtCeiling = principalForMonthlyPayment(
-      maxPaymentAtCeiling,
-      interestRate,
-      termYears
-    );
-    const maxPossibleMortgage = Math.max(
-      Math.min(ltvCapAmount, capacityAtCeiling),
-      0
-    );
-
-    const maxPaymentAtTarget = Math.max(
-      totalIncome * (targetPtiPercent / 100) - totalObligations,
-      0
-    );
-    const capacityAtTarget = principalForMonthlyPayment(
-      maxPaymentAtTarget,
-      interestRate,
+    const capacityAtWorkingCap = principalForBlendedPayment(
+      maxPaymentAtWorkingCap,
+      mix.linkedShare,
       termYears
     );
     const recommendedMortgage = Math.max(
-      Math.min(ltvCapAmount, capacityAtTarget),
+      Math.min(ltvCapAmount, capacityAtWorkingCap),
       0
     );
+
+    // הכנסה פנויה * 50% - התקרה החוקית (הוראה 329), לצורך התייחסות בלבד.
+    const maxPaymentAtLegalCap = Math.max(
+      disposableIncomeBeforeMortgage * (LEGAL_MAX_PTI_PERCENT / 100),
+      0
+    );
+    const capacityAtLegalCap = principalForBlendedPayment(
+      maxPaymentAtLegalCap,
+      mix.linkedShare,
+      termYears
+    );
+    const maxPossibleMortgage = Math.max(
+      Math.min(ltvCapAmount, capacityAtLegalCap),
+      0
+    );
+
+    // טבלת יכולת מימון: לכל תמהיל ריבית ולכל תקופת הלוואה, המשכנתה
+    // המקסימלית שניתן לקבל במסגרת מדיניות העבודה (38% מההכנסה הפנויה),
+    // בכפוף גם לתקרת המימון (LTV) אם הוזן שווי נכס.
+    const capacityTable = MIX_OPTIONS.map((option) => ({
+      mix: option,
+      byTerm: TERM_OPTIONS_YEARS.map((years) => {
+        const capacity = principalForBlendedPayment(
+          maxPaymentAtWorkingCap,
+          option.linkedShare,
+          years
+        );
+        return Math.max(Math.min(ltvCapAmount, capacity), 0);
+      }),
+    }));
 
     const fundingShortfall = Math.max(
       requiredMortgage - maxPossibleMortgage,
@@ -261,25 +320,25 @@ export default function SmartMortgageCalculator() {
     const totalCashNeededAtClosing =
       propertyValue - grantedMortgage + totalAssociatedCosts;
 
-    const minMonthlyPayment = monthlyPaymentForPrincipal(
+    const minMonthlyPayment = paymentForBlendedPrincipal(
       requiredMortgage,
-      interestRate,
+      mix.linkedShare,
       termYears
     );
-    const desiredMonthlyPayment = monthlyPaymentForPrincipal(
+    const desiredMonthlyPayment = paymentForBlendedPrincipal(
       recommendedMortgage,
-      interestRate,
+      mix.linkedShare,
       termYears
     );
-    const maxMonthlyPayment = monthlyPaymentForPrincipal(
+    const maxMonthlyPayment = paymentForBlendedPrincipal(
       maxPossibleMortgage,
-      interestRate,
+      mix.linkedShare,
       termYears
     );
 
     const actualPtiPercent =
-      totalIncome > 0
-        ? ((desiredMonthlyPayment + totalObligations) / totalIncome) * 100
+      disposableIncomeBeforeMortgage > 0
+        ? (desiredMonthlyPayment / disposableIncomeBeforeMortgage) * 100
         : 0;
     const disposableIncomeAfterMortgage =
       disposableIncomeBeforeMortgage - desiredMonthlyPayment;
@@ -296,6 +355,7 @@ export default function SmartMortgageCalculator() {
       ltvCapAmount,
       maxPossibleMortgage,
       recommendedMortgage,
+      capacityTable,
       fundingShortfall,
       totalCashNeededAtClosing,
       minMonthlyPayment,
@@ -319,8 +379,7 @@ export default function SmartMortgageCalculator() {
     mortgageAdvisoryFee,
     otherFees,
     transactionType,
-    targetPtiPercent,
-    interestRate,
+    mix,
     termYears,
   ]);
 
@@ -517,45 +576,52 @@ export default function SmartMortgageCalculator() {
 
       <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-primary">פרטי המשכנתה</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="ריבית שנתית משוערת" suffix="%">
-            <NumberInput
-              value={interestRate}
-              onChange={setInterestRate}
-              min={0}
-              max={15}
-              step={0.1}
-            />
-          </Field>
-          <Field label="תקופת הלוואה" suffix="שנים">
-            <NumberInput
-              value={termYears}
-              onChange={setTermYears}
-              min={MIN_TERM_YEARS}
-              max={MAX_TERM_YEARS}
-            />
-          </Field>
+        <p className="text-xs text-foreground/50">
+          ריביות ממוצעות לחישוב: {LINKED_RATE_PERCENT}% במסלול צמוד מדד,{" "}
+          {UNLINKED_RATE_PERCENT}% במסלול לא צמוד מדד - אינן הצעה מחייבת
+          מבנק כלשהו.
+        </p>
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-foreground/80">
+            תמהיל מסלולי ריבית
+          </span>
+          {MIX_OPTIONS.map((option) => (
+            <label
+              key={option.id}
+              className="flex items-center gap-2 text-sm text-foreground/80"
+            >
+              <input
+                type="radio"
+                name="mix"
+                checked={mixId === option.id}
+                onChange={() => setMixId(option.id)}
+                className="h-4 w-4"
+              />
+              {option.label}
+            </label>
+          ))}
         </div>
+        <Field label="תקופת הלוואה" suffix="שנים">
+          <select
+            value={termYears}
+            onChange={(e) => setTermYears(Number(e.target.value))}
+            className="w-full rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-primary"
+          >
+            {TERM_OPTIONS_YEARS.map((years) => (
+              <option key={years} value={years}>
+                {years} שנה
+              </option>
+            ))}
+          </select>
+        </Field>
         <p className="text-xs text-foreground/50">
           לפי הגיל שהוזן, משך ההלוואה המומלץ עד גיל {RETIREMENT_AGE_CAP} הוא{" "}
           {recommendedMaxTerm} שנים.
         </p>
-        <Field label={`יחס החזר מהכנסה רצוי: ${targetPtiPercent}%`}>
-          <input
-            type="range"
-            min={10}
-            max={MAX_PTI_PERCENT}
-            step={1}
-            value={targetPtiPercent}
-            onChange={(e) => setTargetPtiPercent(Number(e.target.value))}
-            className="w-full accent-[var(--brand-primary)]"
-            dir="ltr"
-          />
-        </Field>
         <p className="text-xs text-foreground/50">
-          עד {PRUDENT_PTI_PERCENT}% - מקובל על רוב הבנקים. בין{" "}
-          {PRUDENT_PTI_PERCENT}% ל-{MAX_PTI_PERCENT}% - מותר בכפוף למגבלות
-          נוספות. מעל {MAX_PTI_PERCENT}% - אסור לפי הוראת בנק ישראל 329.
+          יחס החזר - עד {WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה (מדיניות
+          העבודה). התקרה החוקית לפי הוראת בנק ישראל 329 היא{" "}
+          {LEGAL_MAX_PTI_PERCENT}% מההכנסה הפנויה.
         </p>
       </section>
 
@@ -623,7 +689,8 @@ export default function SmartMortgageCalculator() {
                   </tr>
                   <tr className="border-b border-black/5">
                     <td className="py-2 pr-2">
-                      מומלצת (לפי יחס החזר רצוי {targetPtiPercent}%)
+                      מומלצת (לפי מדיניות עבודה {WORKING_PTI_CAP_PERCENT}%,{" "}
+                      {mix.label}, {termYears} שנה)
                     </td>
                     <td className="py-2">
                       {currency.format(results.recommendedMortgage)} ₪
@@ -633,7 +700,7 @@ export default function SmartMortgageCalculator() {
                     <td className="py-2 pr-2">
                       מקסימלית אפשרית ({transactionType.label}, תקרת LTV{" "}
                       {Math.round(transactionType.ltv * 100)}% / תקרת החזר{" "}
-                      {MAX_PTI_PERCENT}%)
+                      {LEGAL_MAX_PTI_PERCENT}%)
                     </td>
                     <td className="py-2 font-semibold text-primary">
                       {currency.format(results.maxPossibleMortgage)} ₪
@@ -654,6 +721,54 @@ export default function SmartMortgageCalculator() {
                 ✅ הסכום הנדרש לעסקה מכוסה במסגרת תקרת המימון המקסימלית.
               </div>
             )}
+
+            <div>
+              <h3 className="text-sm font-semibold text-foreground/80">
+                טבלת יכולת מימון - לפי תמהיל ותקופת הלוואה
+              </h3>
+              <p className="text-xs text-foreground/50">
+                המשכנתה המקסימלית האפשרית במסגרת מדיניות העבודה (
+                {WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה), לפי {LINKED_RATE_PERCENT}%
+                ריבית במסלול צמוד מדד ו-{UNLINKED_RATE_PERCENT}% במסלול לא
+                צמוד מדד, ובכפוף לתקרת המימון (LTV).
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-black/10 text-right text-foreground/70">
+                    <th className="py-2 pr-2">תמהיל</th>
+                    {TERM_OPTIONS_YEARS.map((years) => (
+                      <th key={years} className="py-2">
+                        {years} שנה
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.capacityTable.map((row) => (
+                    <tr key={row.mix.id} className="border-b border-black/5">
+                      <td className="py-2 pr-2 font-medium">
+                        {row.mix.label}
+                      </td>
+                      {row.byTerm.map((amount, index) => (
+                        <td
+                          key={TERM_OPTIONS_YEARS[index]}
+                          className={
+                            row.mix.id === mixId &&
+                            TERM_OPTIONS_YEARS[index] === termYears
+                              ? "py-2 font-semibold text-primary"
+                              : "py-2"
+                          }
+                        >
+                          {currency.format(amount)} ₪
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <ResultCard
