@@ -92,21 +92,18 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
           {brief.title}
         </a>
 
-        <div>
+        <div className="rounded-xl p-4" style={{ backgroundColor: "#F0FAF4", border: `1px dashed ${GREEN}` }}>
           <h3 className="mb-1 text-xs font-extrabold" style={{ color: GREEN }}>
-            מה קרה
+            הוק פתיחה 🎣 · 3 השניות הראשונות
           </h3>
-          <p className="text-sm leading-relaxed" style={{ color: TEXT }}>
+          <p className="text-base font-bold leading-snug" style={{ color: NAVY }}>
             {brief.whatHappened}
           </p>
         </div>
 
         <div className="rounded-xl p-4" style={{ backgroundColor: "#EAF6EF" }}>
-          <h3 className="mb-1 flex items-center gap-1 text-xs font-extrabold" style={{ color: GREEN }}>
-            מה זה אומר למחזיקי משכנתא
-            <span className="font-medium" style={{ color: "#6B8578" }}>
-              · התסריט לסרטון 🎬
-            </span>
+          <h3 className="mb-1 text-xs font-extrabold" style={{ color: GREEN }}>
+            התסריט לסרטון 🎬
           </h3>
           <p
             className="whitespace-pre-line text-sm leading-relaxed"
@@ -121,7 +118,7 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
           style={{ borderColor: GOLD, backgroundColor: "#FCF8EC" }}
         >
           <h3 className="mb-1 text-xs font-extrabold" style={{ color: "#A6801F" }}>
-            שאלת סיום לסרטון
+            קריאה לפעולה 🔥 · סיום
           </h3>
           <p className="text-sm font-semibold leading-relaxed" style={{ color: NAVY }}>
             {brief.closingQuestion}
