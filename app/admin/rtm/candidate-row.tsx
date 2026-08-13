@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { generateBriefAction } from "./actions";
+import { generateBriefAction, deleteNewsItemAction } from "./actions";
 
 export type CandidateView = {
   id: string;
@@ -16,6 +16,7 @@ const NAVY = "#0F243E";
 
 export default function CandidateRow({ candidate }: { candidate: CandidateView }) {
   const [isPending, startTransition] = useTransition();
+  const [isDeleting, startDeleting] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   function makeBrief() {
@@ -23,6 +24,13 @@ export default function CandidateRow({ candidate }: { candidate: CandidateView }
     startTransition(async () => {
       const result = await generateBriefAction(candidate.id);
       if (result.error) setError(result.error);
+    });
+  }
+
+  function removeCandidate() {
+    if (!confirm("להסיר את הכתבה הזו מהרשימה?")) return;
+    startDeleting(async () => {
+      await deleteNewsItemAction(candidate.id);
     });
   }
 
@@ -64,11 +72,21 @@ export default function CandidateRow({ candidate }: { candidate: CandidateView }
         <button
           type="button"
           onClick={makeBrief}
-          disabled={isPending}
+          disabled={isPending || isDeleting}
           className="rounded-full px-4 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-60"
           style={{ backgroundColor: GREEN }}
         >
           {isPending ? "כותב בריף..." : "צור בריף ✨"}
+        </button>
+        <button
+          type="button"
+          onClick={removeCandidate}
+          disabled={isPending || isDeleting}
+          className="mr-auto rounded-full border px-3 py-2 text-sm font-medium hover:bg-black/5 disabled:opacity-60"
+          style={{ borderColor: "#E1B0B0", color: "#B4232A" }}
+          title="הסר את הכתבה מהרשימה"
+        >
+          {isDeleting ? "מסיר..." : "הסר 🗑️"}
         </button>
         {error && <span className="text-xs font-medium text-red-600">{error}</span>}
       </div>
