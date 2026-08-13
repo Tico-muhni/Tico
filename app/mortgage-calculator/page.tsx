@@ -25,11 +25,16 @@ export const metadata: Metadata = {
 // tico-annual-report) - ולא ה-primary/button/bg הישנים (כחול/אדום/
 // ירוק-בהיר) שהגיעו מהמחשבון הישן. מוגדר מקומית לעמוד הזה בלבד, בלי
 // לגעת בטוקנים הגלובליים ששאר האתר (lottery-calculator וכו') תלוי בהם.
+// הכלים הפיננסיים האמיתיים לא תומכים ב-dark mode אוטומטי ("Always use
+// the light/green brand palette" - כלשונו של tico-finance) - לכן
+// צריך לקבע גם את surface (לא רק bg/text), אחרת ה-media query הגלובלי
+// של Tico הופך כרטיסים לכהים תוך כדי שהטקסט הכהה שלנו נשאר כהה.
 const BRAND_STYLE = {
   "--brand-primary": "#2E8B57",
   "--brand-button": "#2E8B57",
   "--brand-bg": "#F5FAF7",
   "--brand-text": "#1A1A2E",
+  "--surface": "#FFFFFF",
   "--tico-good": "#2E8B57",
   "--tico-good-soft": "rgba(46,139,87,.11)",
   "--tico-warn": "#B8860B",
