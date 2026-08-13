@@ -102,10 +102,16 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
         </div>
 
         <div className="rounded-xl p-4" style={{ backgroundColor: "#EAF6EF" }}>
-          <h3 className="mb-1 text-xs font-extrabold" style={{ color: GREEN }}>
+          <h3 className="mb-1 flex items-center gap-1 text-xs font-extrabold" style={{ color: GREEN }}>
             מה זה אומר למחזיקי משכנתא
+            <span className="font-medium" style={{ color: "#6B8578" }}>
+              · התסריט לסרטון 🎬
+            </span>
           </h3>
-          <p className="text-sm leading-relaxed" style={{ color: TEXT }}>
+          <p
+            className="whitespace-pre-line text-sm leading-relaxed"
+            style={{ color: TEXT }}
+          >
             {brief.meaningForMortgageHolders}
           </p>
         </div>
