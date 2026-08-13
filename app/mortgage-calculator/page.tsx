@@ -49,7 +49,8 @@ export default function MortgageCalculatorPage() {
     >
       <main className="flex w-full max-w-4xl flex-col gap-6">
         <header className="flex flex-col gap-2 text-center">
-          <h1 className="text-2xl font-semibold text-primary">
+          <p className="text-sm font-semibold text-primary">Tico Finance</p>
+          <h1 className="text-2xl font-semibold text-foreground">
             מחשבון משכנתה חכם
           </h1>
           <p className="text-foreground/80">
@@ -57,6 +58,7 @@ export default function MortgageCalculatorPage() {
             אוטומטית יחס החזר, סך הכנסות, הכנסה פנויה ומשכנתה מקסימלית -
             בהתאם לכללי המימון של בנק ישראל.
           </p>
+          <div className="mx-auto h-px w-16 bg-primary" />
         </header>
         <SmartMortgageCalculator />
       </main>

@@ -481,7 +481,7 @@ export default function SmartMortgageCalculator() {
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-4 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
         <div>
-          <h2 className="text-lg font-semibold text-primary">פרטי לווים</h2>
+          <h2 className="text-lg font-semibold text-foreground">פרטי לווים</h2>
           <p className="text-xs text-foreground/50">
             הפרטים משמשים לחישוב בלבד ואינם נשמרים במערכת.
           </p>
@@ -535,7 +535,7 @@ export default function SmartMortgageCalculator() {
       </section>
 
       <section className="flex flex-col gap-4 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
-        <h2 className="text-lg font-semibold text-primary">פרטי הנכס</h2>
+        <h2 className="text-lg font-semibold text-foreground">פרטי הנכס</h2>
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium text-foreground/80">
             סיווג לצורך אחוז מימון מקסימלי (LTV)
@@ -653,7 +653,7 @@ export default function SmartMortgageCalculator() {
       </section>
 
       <section className="flex flex-col gap-4 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
-        <h2 className="text-lg font-semibold text-primary">הוצאות נלוות</h2>
+        <h2 className="text-lg font-semibold text-foreground">הוצאות נלוות</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="עו״ד" suffix="₪">
             <NumberInput value={lawyerFee} onChange={setLawyerFee} min={0} />
@@ -686,7 +686,7 @@ export default function SmartMortgageCalculator() {
       </section>
 
       <section className="flex flex-col gap-4 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
-        <h2 className="text-lg font-semibold text-primary">פרטי המשכנתה</h2>
+        <h2 className="text-lg font-semibold text-foreground">פרטי המשכנתה</h2>
         <p className="text-xs text-foreground/50">
           ריביות ממוצעות לחישוב: {LINKED_RATE_PERCENT}% במסלול צמוד מדד,{" "}
           {UNLINKED_RATE_PERCENT}% במסלול לא צמוד מדד - אינן הצעה מחייבת
@@ -737,7 +737,7 @@ export default function SmartMortgageCalculator() {
       </section>
 
       <section className="flex flex-col gap-4 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
-        <h2 className="text-lg font-semibold text-primary">תוצאות ותמהיל</h2>
+        <h2 className="text-lg font-semibold text-foreground">תוצאות ותמהיל</h2>
         {!hasEnoughData ? (
           <p className="text-sm text-foreground/60">
             הזינו שווי נכס והכנסות כדי לראות תוצאות.
@@ -815,7 +815,7 @@ export default function SmartMortgageCalculator() {
                       {Math.round(transactionType.ltv * 100)}% / תקרת החזר{" "}
                       {LEGAL_MAX_PTI_PERCENT}%)
                     </td>
-                    <td className="py-2 font-semibold text-primary">
+                    <td className="py-2 font-semibold text-foreground">
                       {currency.format(results.maxPossibleMortgage)} ₪
                     </td>
                   </tr>
@@ -870,7 +870,7 @@ export default function SmartMortgageCalculator() {
                           className={
                             row.mix.id === mixId &&
                             TERM_OPTIONS_YEARS[index] === termYears
-                              ? "py-2 font-semibold text-primary"
+                              ? "py-2 font-semibold text-foreground"
                               : "py-2"
                           }
                         >
@@ -903,14 +903,14 @@ export default function SmartMortgageCalculator() {
               <button
                 type="button"
                 onClick={handlePrintPdf}
-                className="whitespace-nowrap rounded-full border border-primary px-5 py-2 text-sm font-medium text-primary transition-opacity hover:opacity-80"
+                className="whitespace-nowrap rounded-full border border-[var(--tico-line-strong)] bg-surface px-5 py-2 text-sm font-semibold text-foreground transition-opacity hover:opacity-80"
               >
                 ייצוא ל-PDF
               </button>
               <button
                 type="button"
                 onClick={handleExportExcel}
-                className="whitespace-nowrap rounded-full border border-primary px-5 py-2 text-sm font-medium text-primary transition-opacity hover:opacity-80"
+                className="whitespace-nowrap rounded-full border border-[var(--tico-line-strong)] bg-surface px-5 py-2 text-sm font-semibold text-foreground transition-opacity hover:opacity-80"
               >
                 ייצוא לאקסל
               </button>
@@ -927,7 +927,7 @@ export default function SmartMortgageCalculator() {
                 )}`}
                 target="_blank"
                 rel="noopener"
-                className="whitespace-nowrap rounded-full bg-button px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                className="whitespace-nowrap rounded-full border border-[var(--tico-line-strong)] bg-surface px-5 py-2 text-sm font-semibold text-foreground transition-opacity hover:opacity-80"
               >
                 בדיקה מול היועץ ב-WhatsApp
               </a>
@@ -937,7 +937,7 @@ export default function SmartMortgageCalculator() {
       </section>
 
       <section className="flex flex-col gap-2 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
-        <h2 className="text-lg font-semibold text-primary">הערות</h2>
+        <h2 className="text-lg font-semibold text-foreground">הערות</h2>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
@@ -1059,7 +1059,7 @@ function ResultCard({
       <span className="text-xs text-foreground/50">{label}</span>
       <span
         className={`text-lg font-semibold ${
-          warn ? "text-[var(--tico-critical)]" : "text-primary"
+          warn ? "text-[var(--tico-critical)]" : "text-foreground"
         }`}
       >
         {currency.format(value)} ₪
