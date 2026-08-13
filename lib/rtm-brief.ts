@@ -25,9 +25,24 @@ const RTM_COMPLIANCE_RULES = `
 const OUTPUT_INSTRUCTIONS = `
 החזר אך ורק אובייקט JSON תקין (בלי טקסט נוסף לפניו או אחריו) עם בדיוק
 שלושת המפתחות הבאים, כולם בעברית:
-- "whatHappened": 1-2 משפטים קצרים בשפה פשוטה שמסבירים מה קרה בידיעה, כאילו למישהו בלי רקע פיננסי.
-- "meaningForMortgageHolders": 1-3 משפטים קצרים שמסבירים מה המשמעות למי שכבר יש לו משכנתא או עומד לקחת. פרקטי וקונקרטי, בלי להבטיח ריבית/אישור/תוצאה.
-- "closingQuestion": שאלה קצרה ומזמינה לסיום סרטון אינסטגרם, שמעודדת תגובות או פנייה בהודעה. בלי הבטחת תוצאה.
+
+- "whatHappened": 1-2 משפטים קצרים בשפה פשוטה שמסבירים מה קרה בידיעה,
+  כאילו למישהו בלי רקע פיננסי. זה ה-hook שפותח את הסרטון.
+
+- "meaningForMortgageHolders": זה ליבת הסרטון - לא סיכום של שורה-שתיים,
+  אלא מיני-תסריט מדובר שהיועץ יכול כמעט לקרוא מול המצלמה. 4-6 משפטים
+  בגוף ראשון ובטון חם ומדבר (למשל "תשמעו", "אז מה זה אומר בשבילכם"),
+  שמסבירים בצורה פרקטית וקונקרטית איך הידיעה נוגעת למי שכבר יש לו
+  משכנתא או עומד לקחת - כולל דוגמה מוחשית אחת (סוג מסלול, בדיקה שכדאי
+  לעשות, או צעד אפשרי). בלי להבטיח ריבית/אישור/תוצאה, ובלי מספרים
+  קונקרטיים כהבטחה.
+
+- "closingQuestion": שאלת סיום חזקה שנועדה להניע לפעולה אמיתית - לגרום
+  לצופים להגיב, לשתף, או לשלוח הודעה. לא "מה דעתכם?" גנרי, אלא שאלה
+  שמעמידה תרחיש קונקרטי או בחירה בין שתי אופציות, ומבקשת מהצופה להחליט
+  מה הוא היה עושה - עם קריאה ברורה לפעולה (למשל: לכתוב 1 או 2 בתגובות,
+  לתייג מישהו שזה רלוונטי לו, או לשלוח הודעה לבדיקה אישית). קצרה, חדה
+  ומגרה תגובה.
 `.trim();
 
 export function getBriefModel() {
@@ -100,8 +115,9 @@ ${OUTPUT_INSTRUCTIONS}`;
       // The default Gemini Flash model "thinks" before answering, and that
       // reasoning is billed against maxOutputTokens. A low budget (e.g. 800)
       // gets consumed by thinking, truncating the JSON answer into invalid
-      // JSON. Give enough room for the thinking plus the output.
-      maxOutputTokens: 3000,
+      // JSON. The meaning section is now a longer mini-script, so give extra
+      // room for the thinking plus the output.
+      maxOutputTokens: 5000,
     },
   });
 
