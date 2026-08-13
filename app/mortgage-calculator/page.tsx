@@ -21,12 +21,24 @@ export const metadata: Metadata = {
   },
 };
 
-// הצבע הירוק של המותג (#2E8B57) - כמו בכל שאר האתר (login/register/admin/rtm) -
-// מוגדר כאן במקום ה-primary/button הישנים (כחול/אדום) שהגיעו מהמחשבון
-// הישן ואינם צבעי המותג בפועל.
+// פלטת המותג האמיתית של Tico - זהה בכל הכלים הפיננסיים (tico-finance,
+// tico-annual-report) - ולא ה-primary/button/bg הישנים (כחול/אדום/
+// ירוק-בהיר) שהגיעו מהמחשבון הישן. מוגדר מקומית לעמוד הזה בלבד, בלי
+// לגעת בטוקנים הגלובליים ששאר האתר (lottery-calculator וכו') תלוי בהם.
 const BRAND_STYLE = {
   "--brand-primary": "#2E8B57",
   "--brand-button": "#2E8B57",
+  "--brand-bg": "#F5FAF7",
+  "--brand-text": "#1A1A2E",
+  "--tico-good": "#2E8B57",
+  "--tico-good-soft": "rgba(46,139,87,.11)",
+  "--tico-warn": "#B8860B",
+  "--tico-warn-soft": "rgba(184,134,11,.13)",
+  "--tico-critical": "#C0392B",
+  "--tico-critical-soft": "rgba(192,57,43,.11)",
+  "--tico-line": "#C8DDD2",
+  "--tico-line-strong": "#AFCDBF",
+  "--tico-shadow": "0 1px 2px rgba(15,36,62,.04), 0 10px 26px rgba(15,36,62,.07)",
 } as CSSProperties;
 
 export default function MortgageCalculatorPage() {

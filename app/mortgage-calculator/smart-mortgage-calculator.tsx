@@ -165,17 +165,20 @@ function paymentForBlendedPrincipal(
 
 function ptiStatus(percent: number) {
   if (percent <= WORKING_PTI_CAP_PERCENT) {
-    return { label: "בהתאם למדיניות העבודה (38%)", className: "text-emerald-600" };
+    return {
+      label: "בהתאם למדיניות העבודה (38%)",
+      className: "text-[var(--tico-good)]",
+    };
   }
   if (percent <= LEGAL_MAX_PTI_PERCENT) {
     return {
       label: "מעל מדיניות העבודה, אך בתוך התקרה החוקית (הוראה 329)",
-      className: "text-amber-600",
+      className: "text-[var(--tico-warn)]",
     };
   }
   return {
     label: "חורג מהתקרה החוקית לפי הוראה 329",
-    className: "text-red-600",
+    className: "text-[var(--tico-critical)]",
   };
 }
 
@@ -476,7 +479,7 @@ export default function SmartMortgageCalculator() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
+      <section className="flex flex-col gap-4 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
         <div>
           <h2 className="text-lg font-semibold text-primary">פרטי לווים</h2>
           <p className="text-xs text-foreground/50">
@@ -531,7 +534,7 @@ export default function SmartMortgageCalculator() {
         </Field>
       </section>
 
-      <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
+      <section className="flex flex-col gap-4 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
         <h2 className="text-lg font-semibold text-primary">פרטי הנכס</h2>
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium text-foreground/80">
@@ -649,7 +652,7 @@ export default function SmartMortgageCalculator() {
         )}
       </section>
 
-      <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
+      <section className="flex flex-col gap-4 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
         <h2 className="text-lg font-semibold text-primary">הוצאות נלוות</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="עו״ד" suffix="₪">
@@ -682,7 +685,7 @@ export default function SmartMortgageCalculator() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
+      <section className="flex flex-col gap-4 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
         <h2 className="text-lg font-semibold text-primary">פרטי המשכנתה</h2>
         <p className="text-xs text-foreground/50">
           ריביות ממוצעות לחישוב: {LINKED_RATE_PERCENT}% במסלול צמוד מדד,{" "}
@@ -713,7 +716,7 @@ export default function SmartMortgageCalculator() {
           <select
             value={termYears}
             onChange={(e) => setTermYears(Number(e.target.value))}
-            className="w-full rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-primary"
+            className="w-full rounded-lg border border-[var(--tico-line-strong)] px-3 py-2 outline-none focus:border-primary"
           >
             {TERM_OPTIONS_YEARS.map((years) => (
               <option key={years} value={years}>
@@ -733,7 +736,7 @@ export default function SmartMortgageCalculator() {
         </p>
       </section>
 
-      <section className="flex flex-col gap-4 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
+      <section className="flex flex-col gap-4 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
         <h2 className="text-lg font-semibold text-primary">תוצאות ותמהיל</h2>
         {!hasEnoughData ? (
           <p className="text-sm text-foreground/60">
@@ -780,13 +783,13 @@ export default function SmartMortgageCalculator() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[520px] border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-black/10 text-right text-foreground/70">
+                  <tr className="border-b border-[var(--tico-line-strong)] text-right text-foreground/70">
                     <th className="py-2 pr-2">משכנתה</th>
                     <th className="py-2">סכום</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-black/5">
+                  <tr className="border-b border-[var(--tico-line)]">
                     <td className="py-2 pr-2">
                       {useManualFinancingPercent
                         ? "נדרשת לעסקה (לפי אחוז מימון ידני)"
@@ -797,7 +800,7 @@ export default function SmartMortgageCalculator() {
                       {results.requiredFinancingPercent.toFixed(0)}% מימון)
                     </td>
                   </tr>
-                  <tr className="border-b border-black/5">
+                  <tr className="border-b border-[var(--tico-line)]">
                     <td className="py-2 pr-2">
                       מומלצת (לפי מדיניות עבודה {WORKING_PTI_CAP_PERCENT}%,{" "}
                       {mix.label}, {termYears} שנה)
@@ -806,7 +809,7 @@ export default function SmartMortgageCalculator() {
                       {currency.format(results.recommendedMortgage)} ₪
                     </td>
                   </tr>
-                  <tr className="border-b border-black/5">
+                  <tr className="border-b border-[var(--tico-line)]">
                     <td className="py-2 pr-2">
                       מקסימלית אפשרית ({transactionType.label}, תקרת LTV{" "}
                       {Math.round(transactionType.ltv * 100)}% / תקרת החזר{" "}
@@ -821,13 +824,13 @@ export default function SmartMortgageCalculator() {
             </div>
 
             {results.fundingShortfall > 0 ? (
-              <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="rounded-xl bg-[var(--tico-critical-soft)] px-4 py-3 text-sm text-[var(--tico-critical)]">
                 ⚠️ חסר מימון של {currency.format(results.fundingShortfall)} ₪
                 - המשכנתה הנדרשת חורגת מהתקרה המקסימלית האפשרית. נדרש הון עצמי
                 נוסף, הפחתת שווי הנכס, או הארכת תקופת ההלוואה.
               </div>
             ) : (
-              <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              <div className="rounded-xl bg-[var(--tico-good-soft)] px-4 py-3 text-sm text-[var(--tico-good)]">
                 ✅ הסכום הנדרש לעסקה מכוסה במסגרת תקרת המימון המקסימלית.
               </div>
             )}
@@ -846,7 +849,7 @@ export default function SmartMortgageCalculator() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-black/10 text-right text-foreground/70">
+                  <tr className="border-b border-[var(--tico-line-strong)] text-right text-foreground/70">
                     <th className="py-2 pr-2">תמהיל</th>
                     {TERM_OPTIONS_YEARS.map((years) => (
                       <th key={years} className="py-2">
@@ -857,7 +860,7 @@ export default function SmartMortgageCalculator() {
                 </thead>
                 <tbody>
                   {results.capacityTable.map((row) => (
-                    <tr key={row.mix.id} className="border-b border-black/5">
+                    <tr key={row.mix.id} className="border-b border-[var(--tico-line)]">
                       <td className="py-2 pr-2 font-medium">
                         {row.mix.label}
                       </td>
@@ -933,13 +936,13 @@ export default function SmartMortgageCalculator() {
         )}
       </section>
 
-      <section className="flex flex-col gap-2 rounded-2xl border border-black/5 bg-surface p-6 shadow-sm">
+      <section className="flex flex-col gap-2 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
         <h2 className="text-lg font-semibold text-primary">הערות</h2>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={4}
-          className="w-full rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-primary"
+          className="w-full rounded-lg border border-[var(--tico-line-strong)] px-3 py-2 outline-none focus:border-primary"
         />
       </section>
 
@@ -982,7 +985,7 @@ function BorrowerCard({
           onChange={(e) =>
             onChange({ employmentType: e.target.value as EmploymentType })
           }
-          className="w-full rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-primary"
+          className="w-full rounded-lg border border-[var(--tico-line-strong)] px-3 py-2 outline-none focus:border-primary"
         >
           {Object.entries(EMPLOYMENT_TYPE_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
@@ -1024,7 +1027,7 @@ function BorrowerCard({
           onChange={(e) =>
             onChange({ creditConduct: e.target.value as CreditConduct })
           }
-          className="w-full rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-primary"
+          className="w-full rounded-lg border border-[var(--tico-line-strong)] px-3 py-2 outline-none focus:border-primary"
         >
           {Object.entries(CREDIT_CONDUCT_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
@@ -1034,7 +1037,7 @@ function BorrowerCard({
         </select>
       </Field>
       {borrower.creditConduct !== "good" && (
-        <p className="text-xs text-amber-600">
+        <p className="text-xs text-[var(--tico-warn)]">
           ⚠️ ייתכן שהדבר ישפיע על אישור העסקה בבנק, מעבר לחישוב המספרי.
         </p>
       )}
@@ -1056,7 +1059,7 @@ function ResultCard({
       <span className="text-xs text-foreground/50">{label}</span>
       <span
         className={`text-lg font-semibold ${
-          warn ? "text-red-600" : "text-primary"
+          warn ? "text-[var(--tico-critical)]" : "text-primary"
         }`}
       >
         {currency.format(value)} ₪
@@ -1107,7 +1110,7 @@ function NumberInput({
       max={max}
       step={step ?? 1}
       dir="ltr"
-      className="w-full rounded-lg border border-black/10 px-3 py-2 text-left outline-none focus:border-primary"
+      className="w-full rounded-lg border border-[var(--tico-line-strong)] px-3 py-2 text-left outline-none focus:border-primary"
     />
   );
 }
@@ -1127,7 +1130,7 @@ function TextInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full rounded-lg border border-black/10 px-3 py-2 outline-none focus:border-primary"
+      className="w-full rounded-lg border border-[var(--tico-line-strong)] px-3 py-2 outline-none focus:border-primary"
     />
   );
 }
