@@ -6,6 +6,19 @@ export const metadata: Metadata = {
   title: "מחשבון משכנתה חכם | Tico",
   description:
     "הזינו נתוני הכנסות, התחייבויות וסוג עסקה, וקבלו חישוב אוטומטי של יחס החזר, סך הכנסות, הכנסה פנויה ומשכנתה מקסימלית.",
+  // manifest ייעודי לעמוד הזה (לא זה של האפליקציה הראשית) - כדי
+  // שאפשר יהיה "להוריד" (להוסיף למסך הבית) את מחשבון המשכנתה בפני
+  // עצמו, עם הלוגו של Tico.
+  manifest: "/mortgage-calculator-manifest.webmanifest",
+  icons: {
+    icon: "/favicon-32.png",
+    apple: "/apple-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "מחשבון משכנתה",
+  },
 };
 
 // הצבע הירוק של המותג (#2E8B57) - כמו בכל שאר האתר (login/register/admin/rtm) -
