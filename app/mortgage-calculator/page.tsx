@@ -49,16 +49,18 @@ const BRAND_STYLE = {
 export default function MortgageCalculatorPage() {
   return (
     <div
-      className="flex flex-1 justify-center bg-background px-4 py-10"
+      className="flex flex-1 justify-center bg-background px-4 py-10 print:py-2"
       style={BRAND_STYLE}
     >
-      <main className="flex w-full max-w-4xl flex-col gap-6">
-        <header className="flex flex-col gap-2 text-center">
-          <p className="text-sm font-semibold text-primary">Tico Finance</p>
-          <h1 className="text-2xl font-semibold text-foreground">
+      <main className="flex w-full max-w-4xl flex-col gap-6 print:gap-1">
+        <header className="flex flex-col gap-2 text-center print:gap-0.5">
+          <p className="text-sm font-semibold text-primary print:text-[9px]">
+            Tico Finance
+          </p>
+          <h1 className="text-2xl font-semibold text-foreground print:text-sm">
             מחשבון משכנתה חכם
           </h1>
-          <p className="text-foreground/80">
+          <p className="text-foreground/80 print:hidden">
             הזינו את פרטי העסקה, ההכנסות וההתחייבויות, והמחשבון יחשב עבורכם
             אוטומטית יחס החזר, סך הכנסות, הכנסה פנויה ומשכנתה מקסימלית -
             בהתאם לכללי המימון של בנק ישראל.

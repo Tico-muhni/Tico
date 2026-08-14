@@ -484,7 +484,8 @@ export default function SmartMortgageCalculator() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <>
+    <div className="flex flex-col gap-6 print:hidden">
       <section className="flex flex-col gap-4 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
         <div>
           <h2 className="text-lg font-semibold text-foreground">פרטי לווים</h2>
@@ -956,6 +957,202 @@ export default function SmartMortgageCalculator() {
         לשיקול דעת הבנק ולבדיקת יכולת ההחזר בפועל מול תלוש השכר.
       </p>
     </div>
+
+    {/* דוח מודפס - גרסה מצומצמת של אותו מידע, בלי שדות טופס ריקים
+        ורווחים מיועדים למגע, כדי שה-PDF ייצא לעמוד-שניים ולא שישה. */}
+    <div className="hidden print:block text-[9.5px] leading-snug text-foreground">
+      {hasEnoughData && (
+        <>
+          <table className="w-full border-collapse mb-2">
+            <thead>
+              <tr className="border-b border-[var(--tico-line-strong)] text-right font-semibold">
+                <th className="py-1 pl-2">לווה</th>
+                <th className="py-1 pl-2">שם</th>
+                <th className="py-1 pl-2">גיל</th>
+                <th className="py-1 pl-2">מקצוע</th>
+                <th className="py-1 pl-2">עיסוק</th>
+                <th className="py-1 pl-2">הכנסה נטו</th>
+                <th className="py-1 pl-2">התחייבויות</th>
+                <th className="py-1 pl-2">הכ׳ נוספות</th>
+                <th className="py-1">אשראי</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(hasSecondBorrower ? borrowers : [borrowers[0]]).map(
+                (borrower, index) => (
+                  <tr key={index} className="border-b border-[var(--tico-line)]">
+                    <td className="py-1 pl-2">לווה {index + 1}</td>
+                    <td className="py-1 pl-2">{borrower.name || "-"}</td>
+                    <td className="py-1 pl-2">{borrower.age}</td>
+                    <td className="py-1 pl-2">{borrower.profession || "-"}</td>
+                    <td className="py-1 pl-2">
+                      {EMPLOYMENT_TYPE_LABELS[borrower.employmentType]}
+                    </td>
+                    <td className="py-1 pl-2">
+                      {currency.format(borrower.netIncome)} ₪
+                    </td>
+                    <td className="py-1 pl-2">
+                      {currency.format(borrower.obligations)} ₪
+                    </td>
+                    <td className="py-1 pl-2">
+                      {currency.format(borrower.additionalIncome)} ₪
+                    </td>
+                    <td className="py-1">
+                      {CREDIT_CONDUCT_LABELS[borrower.creditConduct]}
+                    </td>
+                  </tr>
+                )
+              )}
+            </tbody>
+          </table>
+
+          <div className="grid grid-cols-2 gap-x-6 mb-2">
+            <div>
+              <p className="font-semibold mb-0.5">פרטי הנכס</p>
+              <p>
+                סיווג: {transactionType.label} · שווי: {currency.format(propertyValue)} ₪
+                {newPropertyLocation && ` · ${newPropertyLocation}`}
+                {propertyType && ` · ${propertyType}`}
+                {propertyRegistration && ` · ${propertyRegistration}`}
+              </p>
+              <p>
+                הון עצמי נזיל: {currency.format(liquidEquity)} ₪
+                {hasExistingProperty &&
+                  ` · נכס קיים: ${currency.format(existingPropertyValue)} ₪ (משכנתה ${currency.format(existingMortgageBalance)} ₪)`}
+                {useManualFinancingPercent &&
+                  ` · אחוז מימון ידני: ${manualFinancingPercent}%`}
+              </p>
+              <p>
+                הוצאות נלוות: עו״ד {currency.format(lawyerFee)} ₪ · מתווך{" "}
+                {currency.format(brokerFee)} ₪ · מס רכישה{" "}
+                {currency.format(purchaseTax)} ₪ · ייעוץ{" "}
+                {currency.format(mortgageAdvisoryFee)} ₪ · אחר{" "}
+                {currency.format(otherFees)} ₪ · סה״כ{" "}
+                {currency.format(results.totalAssociatedCosts)} ₪
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold mb-0.5">פרטי המשכנתה</p>
+              <p>
+                תמהיל: {mix.label} · תקופה: {termYears} שנה
+              </p>
+              <p>
+                יחס החזר: עד {WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה (תקרה
+                חוקית {LEGAL_MAX_PTI_PERCENT}%)
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-x-4 mb-2">
+            <p>סה״כ הכנסה: {currency.format(results.totalIncome)} ₪</p>
+            <p>סה״כ התחייבויות: {currency.format(results.totalObligations)} ₪</p>
+            <p>הכנסה פנויה: {currency.format(results.disposableIncomeBeforeMortgage)} ₪</p>
+            <p className={status.className}>
+              יחס החזר: {results.actualPtiPercent.toFixed(1)}%
+            </p>
+          </div>
+
+          <table className="w-full border-collapse mb-2">
+            <tbody>
+              <tr className="border-b border-[var(--tico-line)]">
+                <td className="py-1 pl-2">החזר חודשי מינימלי (למשכנתה הנדרשת)</td>
+                <td className="py-1">{currency.format(results.minMonthlyPayment)} ₪</td>
+              </tr>
+              <tr className="border-b border-[var(--tico-line)]">
+                <td className="py-1 pl-2">החזר חודשי רצוי</td>
+                <td className="py-1">{currency.format(results.desiredMonthlyPayment)} ₪</td>
+              </tr>
+              <tr className="border-b border-[var(--tico-line)]">
+                <td className="py-1 pl-2">
+                  החזר חודשי מקסימלי (תקרת {LEGAL_MAX_PTI_PERCENT}%)
+                </td>
+                <td className="py-1">{currency.format(results.maxMonthlyPayment)} ₪</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <table className="w-full border-collapse mb-2">
+            <thead>
+              <tr className="border-b border-[var(--tico-line-strong)] text-right font-semibold">
+                <th className="py-1 pl-2">משכנתה</th>
+                <th className="py-1">סכום</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-[var(--tico-line)]">
+                <td className="py-1 pl-2">
+                  {useManualFinancingPercent
+                    ? "נדרשת לעסקה (לפי אחוז מימון ידני)"
+                    : "נדרשת לעסקה"}
+                </td>
+                <td className="py-1">
+                  {currency.format(results.requiredMortgage)} ₪ (
+                  {results.requiredFinancingPercent.toFixed(0)}%)
+                </td>
+              </tr>
+              <tr className="border-b border-[var(--tico-line)]">
+                <td className="py-1 pl-2">מומלצת</td>
+                <td className="py-1">{currency.format(results.recommendedMortgage)} ₪</td>
+              </tr>
+              <tr className="border-b border-[var(--tico-line)]">
+                <td className="py-1 pl-2 font-semibold">מקסימלית אפשרית</td>
+                <td className="py-1 font-semibold">
+                  {currency.format(results.maxPossibleMortgage)} ₪
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p className="mb-2">
+            {results.fundingShortfall > 0
+              ? `⚠ חסר מימון של ${currency.format(results.fundingShortfall)} ₪ ביחס לתקרה המקסימלית האפשרית.`
+              : "✅ הסכום הנדרש לעסקה מכוסה במסגרת תקרת המימון המקסימלית."}
+          </p>
+
+          <table className="w-full border-collapse mb-2">
+            <thead>
+              <tr className="border-b border-[var(--tico-line-strong)] text-right font-semibold">
+                <th className="py-1 pl-2">תמהיל \ תקופה</th>
+                {TERM_OPTIONS_YEARS.map((years) => (
+                  <th key={years} className="py-1">{years} שנה</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {results.capacityTable.map((row) => (
+                <tr key={row.mix.id} className="border-b border-[var(--tico-line)]">
+                  <td className="py-1 pl-2">{row.mix.label}</td>
+                  {row.byTerm.map((amount, index) => (
+                    <td key={TERM_OPTIONS_YEARS[index]} className="py-1">
+                      {currency.format(amount)} ₪
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="grid grid-cols-3 gap-x-4 mb-2">
+            <p>הון עצמי זמין: {currency.format(results.totalAvailableEquity)} ₪</p>
+            <p>מזומן נדרש בסגירה: {currency.format(results.totalCashNeededAtClosing)} ₪</p>
+            <p>הכנסה פנויה אחרי ההחזר: {currency.format(results.disposableIncomeAfterMortgage)} ₪</p>
+          </div>
+
+          {notes && (
+            <p className="mb-2">
+              <span className="font-semibold">הערות: </span>
+              {notes}
+            </p>
+          )}
+        </>
+      )}
+      <p className="text-[8px] text-foreground/50">
+        המחשבון הוא כלי עזר להערכה בלבד ואינו מהווה ייעוץ פיננסי או התחייבות
+        למתן אשראי. אישור המשכנתה בפועל, אחוז המימון וההחזר החודשי נתונים
+        לשיקול דעת הבנק ולבדיקת יכולת ההחזר בפועל מול תלוש השכר.
+      </p>
+    </div>
+    </>
   );
 }
 
