@@ -300,15 +300,19 @@ export default function SmartMortgageCalculator() {
     // טבלת יכולת מימון: לכל תמהיל ריבית ולכל תקופת הלוואה, יכולת ההחזר
     // הגולמית לפי ההכנסה בלבד (מדיניות עבודה של 38% מההכנסה הפנויה) -
     // ללא הגבלת LTV, כדי שההשוואה בין תמהילים ותקופות תהיה אמיתית ולא
-    // "שטוחה" בגלל תקרת המימון של נכס ספציפי (המוצגת בנפרד למטה).
+    // "שטוחה" בגלל תקרת המימון של נכס ספציפי (המוצגת בנפרד למטה). ליד
+    // כל סכום מוצג גם ההחזר החודשי שמניב אותו (זהה בכל התאים - זו
+    // בדיוק אותה תקרת החזר קבועה - אבל מוצג בכל תא כדי שיהיה ברור
+    // איזה החזר חודשי עומד מאחורי כל סכום משכנתה).
     const capacityTable = MIX_OPTIONS.map((option) => ({
       mix: option,
-      byTerm: TERM_OPTIONS_YEARS.map((years) =>
-        Math.max(
+      byTerm: TERM_OPTIONS_YEARS.map((years) => {
+        const amount = Math.max(
           principalForBlendedPayment(maxPaymentAtWorkingCap, option.linkedShare, years),
           0
-        )
-      ),
+        );
+        return { amount, payment: maxPaymentAtWorkingCap };
+      }),
     }));
 
     const fundingShortfall = Math.max(
@@ -443,8 +447,13 @@ export default function SmartMortgageCalculator() {
           ["תמהיל", "15 שנה", "20 שנה", "25 שנה", "30 שנה"],
           ...results.capacityTable.map((row) => [
             row.mix.label,
-            ...row.byTerm.map((amount) => Math.round(amount)),
+            ...row.byTerm.map((cell) => Math.round(cell.amount)),
           ]),
+          [],
+          [
+            "הערה",
+            `כל הסכומים בטבלה מבוססים על החזר חודשי קבוע של ${Math.round(results.capacityTable[0]?.byTerm[0]?.payment ?? 0)} ₪ (יחס החזר ${WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה) - זה ההחזר החודשי שיתאים לכל אחד מהסכומים שלמעלה`,
+          ],
         ],
       },
       {
@@ -850,7 +859,7 @@ export default function SmartMortgageCalculator() {
                       <td className="py-2 pr-2 font-medium">
                         {row.mix.label}
                       </td>
-                      {row.byTerm.map((amount, index) => (
+                      {row.byTerm.map((cell, index) => (
                         <td
                           key={TERM_OPTIONS_YEARS[index]}
                           className={
@@ -860,7 +869,10 @@ export default function SmartMortgageCalculator() {
                               : "py-2"
                           }
                         >
-                          {currency.format(amount)} ₪
+                          {currency.format(cell.amount)} ₪
+                          <div className="text-xs font-normal text-foreground/50">
+                            {currency.format(cell.payment)} ₪ / חודש
+                          </div>
                         </td>
                       ))}
                     </tr>
@@ -1154,7 +1166,8 @@ export default function SmartMortgageCalculator() {
               <div className="tico-report-section-head">
                 <h2>יכולת מימון לפי תמהיל ותקופה</h2>
                 <div className="tico-report-section-note">
-                  לפי הכנסה בלבד, ללא תקרת LTV
+                  לפי הכנסה בלבד, ללא תקרת LTV · מתחת לכל סכום - ההחזר החודשי
+                  שלו
                 </div>
               </div>
               <div className="tico-report-table-wrap">
@@ -1173,9 +1186,12 @@ export default function SmartMortgageCalculator() {
                     {results.capacityTable.map((row) => (
                       <tr key={row.mix.id}>
                         <td className="tico-report-row-label">{row.mix.label}</td>
-                        {row.byTerm.map((amount, index) => (
+                        {row.byTerm.map((cell, index) => (
                           <td key={TERM_OPTIONS_YEARS[index]} className="tico-report-num">
-                            {currency.format(amount)} ₪
+                            {currency.format(cell.amount)} ₪
+                            <div style={{ fontSize: 10, color: "#818c82", fontWeight: 400 }}>
+                              {currency.format(cell.payment)} ₪ / חודש
+                            </div>
                           </td>
                         ))}
                       </tr>
