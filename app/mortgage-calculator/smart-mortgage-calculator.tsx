@@ -355,15 +355,6 @@ export default function SmartMortgageCalculator() {
       disposableIncomeBeforeMortgage * (WORKING_PTI_CAP_PERCENT / 100),
       0
     );
-    const capacityAtWorkingCap = principalForBlendedPayment(
-      maxPaymentAtWorkingCap,
-      mix.linkedShare,
-      termYears
-    );
-    const recommendedMortgage = Math.max(
-      Math.min(ltvCapAmount, capacityAtWorkingCap),
-      0
-    );
 
     // טבלת יכולת מימון: לכל תמהיל ריבית ולכל תקופת הלוואה, יכולת ההחזר
     // הגולמית לפי ההכנסה בלבד (מדיניות עבודה של 38% מההכנסה הפנויה) -
@@ -382,6 +373,26 @@ export default function SmartMortgageCalculator() {
         return { amount, payment: maxPaymentAtWorkingCap };
       }),
     }));
+
+    // המשכנתה המקסימלית האפשרית = השילוב הטוב ביותר מתוך כל 16
+    // האפשרויות בטבלת יכולת המימון (לא רק התמהיל/התקופה שנבחרו בטופס
+    // למטה) - בכפוף לתקרת ה-LTV/מחיר למשתכן.
+    let bestCapacityMix = MIX_OPTIONS[0];
+    let bestCapacityTermYears: number = TERM_OPTIONS_YEARS[0];
+    let bestCapacityAmount = 0;
+    capacityTable.forEach((row) => {
+      row.byTerm.forEach((cell, index) => {
+        if (cell.amount > bestCapacityAmount) {
+          bestCapacityAmount = cell.amount;
+          bestCapacityMix = row.mix;
+          bestCapacityTermYears = TERM_OPTIONS_YEARS[index];
+        }
+      });
+    });
+    const recommendedMortgage = Math.max(
+      Math.min(ltvCapAmount, bestCapacityAmount),
+      0
+    );
 
     const fundingShortfall = Math.max(
       requiredMortgage - recommendedMortgage,
@@ -408,8 +419,8 @@ export default function SmartMortgageCalculator() {
     );
     const desiredMonthlyPayment = paymentForBlendedPrincipal(
       recommendedMortgage,
-      mix.linkedShare,
-      termYears
+      bestCapacityMix.linkedShare,
+      bestCapacityTermYears
     );
 
     const actualPtiPercent =
@@ -430,6 +441,8 @@ export default function SmartMortgageCalculator() {
       totalAssociatedCosts,
       ltvCapAmount,
       recommendedMortgage,
+      bestCapacityMixLabel: bestCapacityMix.label,
+      bestCapacityTermYears,
       capacityTable,
       fundingShortfall,
       totalCashNeededAtClosing,
@@ -935,7 +948,7 @@ export default function SmartMortgageCalculator() {
                 value={results.minMonthlyPayment}
               />
               <ResultCard
-                label="החזר חודשי רצוי (לתקרת יכולת המימון)"
+                label={`החזר חודשי רצוי (לתקרת יכולת המימון - תמהיל ${results.bestCapacityMixLabel}, ${results.bestCapacityTermYears} שנה)`}
                 value={results.desiredMonthlyPayment}
               />
             </div>
@@ -965,8 +978,8 @@ export default function SmartMortgageCalculator() {
                   <tr className="border-b border-[var(--tico-line)]">
                     <td className="py-2 pr-2">
                       {isMechirLamishtaken
-                        ? `מקסימלית אפשרית (יחס החזר ${WORKING_PTI_CAP_PERCENT}%, מחיר למשתכן, ${mix.label}, ${termYears} שנה)`
-                        : `מקסימלית אפשרית (יחס החזר ${WORKING_PTI_CAP_PERCENT}%, ${transactionType.label} - תקרת LTV ${Math.round(transactionType.ltv * 100)}%, ${mix.label}, ${termYears} שנה)`}
+                        ? `מקסימלית אפשרית (יחס החזר ${WORKING_PTI_CAP_PERCENT}%, מחיר למשתכן, השילוב המיטבי: ${results.bestCapacityMixLabel}, ${results.bestCapacityTermYears} שנה)`
+                        : `מקסימלית אפשרית (יחס החזר ${WORKING_PTI_CAP_PERCENT}%, ${transactionType.label} - תקרת LTV ${Math.round(transactionType.ltv * 100)}%, השילוב המיטבי: ${results.bestCapacityMixLabel}, ${results.bestCapacityTermYears} שנה)`}
                     </td>
                     <td className="py-2 font-semibold text-foreground">
                       {currency.format(results.recommendedMortgage)} ₪
@@ -997,7 +1010,9 @@ export default function SmartMortgageCalculator() {
                 {WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה), לפי{" "}
                 {LINKED_RATE_PERCENT}% ריבית במסלול צמוד מדד ו-
                 {UNLINKED_RATE_PERCENT}% במסלול לא צמוד מדד - ללא הגבלת תקרת
-                המימון (LTV), שמוצגת בנפרד בטבלה שלמעלה.
+                המימון (LTV), שמוצגת בנפרד בטבלה שלמעלה. השילוב המודגש הוא
+                זה שמניב את המשכנתה הגבוהה ביותר, ולכן הוא הבסיס למשכנתה
+                המקסימלית האפשרית שלמעלה.
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -1022,8 +1037,8 @@ export default function SmartMortgageCalculator() {
                         <td
                           key={TERM_OPTIONS_YEARS[index]}
                           className={
-                            row.mix.id === mixId &&
-                            TERM_OPTIONS_YEARS[index] === termYears
+                            row.mix.label === results.bestCapacityMixLabel &&
+                            TERM_OPTIONS_YEARS[index] === results.bestCapacityTermYears
                               ? "py-2 font-semibold text-foreground"
                               : "py-2"
                           }
@@ -1224,8 +1239,9 @@ export default function SmartMortgageCalculator() {
                     {isMechirLamishtaken
                       ? `לפי כללי מחיר למשתכן (תקרת LTV ${Math.round(MECHIR_LTV * 100)}%)`
                       : `לפי ${transactionType.label} (תקרת LTV ${Math.round(transactionType.ltv * 100)}%)`}{" "}
-                    ותקרת החזר {WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה · תמהיל{" "}
-                    {mix.label}, {termYears} שנה.
+                    ותקרת החזר {WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה · השילוב
+                    המיטבי: {results.bestCapacityMixLabel},{" "}
+                    {results.bestCapacityTermYears} שנה.
                     <br />
                     <span className={`tico-report-badge ${badgeClass}`}>
                       {results.fundingShortfall > 0
@@ -1288,15 +1304,13 @@ export default function SmartMortgageCalculator() {
             <section className="tico-report-section">
               <div className="tico-report-section-head">
                 <h2>החזר חודשי</h2>
-                <div className="tico-report-section-note">
-                  {mix.label}, {termYears} שנה
-                </div>
               </div>
               <div className="tico-report-table-wrap">
                 <table className="tico-report-table">
                   <thead>
                     <tr>
                       <th>סוג החזר</th>
+                      <th>תמהיל ותקופה</th>
                       <th className="tico-report-num">סכום</th>
                     </tr>
                   </thead>
@@ -1305,6 +1319,9 @@ export default function SmartMortgageCalculator() {
                       <td className="tico-report-row-label">
                         מינימלי (למשכנתה הנדרשת)
                       </td>
+                      <td>
+                        {mix.label}, {termYears} שנה
+                      </td>
                       <td className="tico-report-num">
                         {currency.format(results.minMonthlyPayment)} ₪
                       </td>
@@ -1312,6 +1329,10 @@ export default function SmartMortgageCalculator() {
                     <tr>
                       <td className="tico-report-row-label">
                         רצוי (לתקרת יכולת המימון, {WORKING_PTI_CAP_PERCENT}%)
+                      </td>
+                      <td>
+                        {results.bestCapacityMixLabel},{" "}
+                        {results.bestCapacityTermYears} שנה
                       </td>
                       <td className="tico-report-num">
                         {currency.format(results.desiredMonthlyPayment)} ₪
@@ -1346,14 +1367,23 @@ export default function SmartMortgageCalculator() {
                     {results.capacityTable.map((row) => (
                       <tr key={row.mix.id}>
                         <td className="tico-report-row-label">{row.mix.label}</td>
-                        {row.byTerm.map((cell, index) => (
-                          <td key={TERM_OPTIONS_YEARS[index]} className="tico-report-num">
-                            {currency.format(cell.amount)} ₪
-                            <div style={{ fontSize: 10, color: "#818c82", fontWeight: 400 }}>
-                              {currency.format(cell.payment)} ₪ / חודש
-                            </div>
-                          </td>
-                        ))}
+                        {row.byTerm.map((cell, index) => {
+                          const isBest =
+                            row.mix.label === results.bestCapacityMixLabel &&
+                            TERM_OPTIONS_YEARS[index] === results.bestCapacityTermYears;
+                          return (
+                            <td
+                              key={TERM_OPTIONS_YEARS[index]}
+                              className="tico-report-num"
+                              style={isBest ? { fontWeight: 800 } : undefined}
+                            >
+                              {currency.format(cell.amount)} ₪
+                              <div style={{ fontSize: 10, color: "#818c82", fontWeight: 400 }}>
+                                {currency.format(cell.payment)} ₪ / חודש
+                              </div>
+                            </td>
+                          );
+                        })}
                       </tr>
                     ))}
                   </tbody>
