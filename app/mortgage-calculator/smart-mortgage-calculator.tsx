@@ -240,10 +240,6 @@ export default function SmartMortgageCalculator() {
   const [mortgageAdvisoryFee, setMortgageAdvisoryFee] = useState<number>(0);
   const [otherFees, setOtherFees] = useState<number>(0);
 
-  // פרטי המשכנתה
-  const [mixId, setMixId] = useState<string>(MIX_OPTIONS[2].id);
-  const [termYears, setTermYears] = useState<number>(30);
-
   const [notes, setNotes] = useState("");
 
   function updateBorrower(index: 0 | 1, patch: Partial<Borrower>) {
@@ -257,8 +253,6 @@ export default function SmartMortgageCalculator() {
   const transactionType =
     TRANSACTION_TYPES.find((type) => type.id === transactionTypeId) ??
     TRANSACTION_TYPES[0];
-
-  const mix = MIX_OPTIONS.find((option) => option.id === mixId) ?? MIX_OPTIONS[0];
 
   // עסקת מחיר למשתכן: מחיר החוזה בפועל = שווי השוק בניכוי ההנחה (הנמוך
   // מבין אחוז ותקרה, כמו במחשבון ההגרלות) - וזה שווי הנכס האפקטיבי
@@ -412,10 +406,18 @@ export default function SmartMortgageCalculator() {
       0
     );
 
-    const minMonthlyPayment = paymentForBlendedPrincipal(
-      requiredMortgage,
-      mix.linkedShare,
-      termYears
+    // טבלת החזר חודשי למשכנתה הנדרשת: לכל תמהיל ותקופה, ההחזר החודשי
+    // עבור סכום המשכנתה הנדרשת הקבוע (להבדיל מטבלת יכולת המימון, שבה
+    // ההחזר קבוע והסכום משתנה). מציגה את כל האפשרויות בלי לבחור עבור
+    // המשתמש תמהיל/תקופה ברירת מחדל.
+    const requiredPaymentTable = MIX_OPTIONS.map((option) => ({
+      mix: option,
+      byTerm: TERM_OPTIONS_YEARS.map((years) =>
+        paymentForBlendedPrincipal(requiredMortgage, option.linkedShare, years)
+      ),
+    }));
+    const minMonthlyPayment = Math.min(
+      ...requiredPaymentTable.flatMap((row) => row.byTerm)
     );
     const desiredMonthlyPayment = paymentForBlendedPrincipal(
       recommendedMortgage,
@@ -444,6 +446,7 @@ export default function SmartMortgageCalculator() {
       bestCapacityMixLabel: bestCapacityMix.label,
       bestCapacityTermYears,
       capacityTable,
+      requiredPaymentTable,
       fundingShortfall,
       totalCashNeededAtClosing,
       equityShortfall,
@@ -474,8 +477,6 @@ export default function SmartMortgageCalculator() {
     mortgageAdvisoryFee,
     otherFees,
     transactionType,
-    mix,
-    termYears,
   ]);
 
   const status = ptiStatus(results.actualPtiPercent);
@@ -509,8 +510,6 @@ export default function SmartMortgageCalculator() {
               ] as (string | number)[][])
             : []),
           ["הון עצמי זמין (₪)", results.totalAvailableEquity],
-          ["תמהיל מסלולי ריבית", mix.label],
-          ["תקופת הלוואה (שנים)", termYears],
           ["סה״כ הכנסה (₪)", results.totalIncome],
           ["סה״כ התחייבויות (₪)", results.totalObligations],
           ["הכנסה פנויה (₪)", results.disposableIncomeBeforeMortgage],
@@ -518,8 +517,9 @@ export default function SmartMortgageCalculator() {
           ["משכנתה נדרשת לעסקה (₪)", results.requiredMortgage],
           ["אחוז מימון נדרש (%)", Number(results.requiredFinancingPercent.toFixed(1))],
           ["משכנתה מקסימלית אפשרית (₪)", results.recommendedMortgage],
-          ["החזר חודשי מינימלי (₪)", Math.round(results.minMonthlyPayment)],
-          ["החזר חודשי רצוי (₪)", Math.round(results.desiredMonthlyPayment)],
+          ["תמהיל ותקופה למשכנתה המקסימלית", `${results.bestCapacityMixLabel}, ${results.bestCapacityTermYears} שנה`],
+          ["החזר חודשי מינימלי - הזול מכל האפשרויות (₪)", Math.round(results.minMonthlyPayment)],
+          ["החזר חודשי רצוי - למשכנתה המקסימלית (₪)", Math.round(results.desiredMonthlyPayment)],
           ["סה״כ הוצאות נלוות (₪)", results.totalAssociatedCosts],
           ["סה״כ מזומן נדרש בסגירת העסקה (₪)", Math.round(results.totalCashNeededAtClosing)],
           [
@@ -546,6 +546,21 @@ export default function SmartMortgageCalculator() {
           [
             "הערה",
             `כל הסכומים בטבלה מבוססים על החזר חודשי קבוע של ${Math.round(results.capacityTable[0]?.byTerm[0]?.payment ?? 0)} ₪ (יחס החזר ${WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה) - זה ההחזר החודשי שיתאים לכל אחד מהסכומים שלמעלה`,
+          ],
+        ],
+      },
+      {
+        name: "החזר למשכנתה הנדרשת",
+        rows: [
+          ["תמהיל", "15 שנה", "20 שנה", "25 שנה", "30 שנה"],
+          ...results.requiredPaymentTable.map((row) => [
+            row.mix.label,
+            ...row.byTerm.map((payment) => Math.round(payment)),
+          ]),
+          [],
+          [
+            "הערה",
+            `ההחזר החודשי (₪) עבור המשכנתה הנדרשת הקבועה (${Math.round(results.requiredMortgage)} ₪) לפי כל תמהיל ותקופה`,
           ],
         ],
       },
@@ -868,41 +883,9 @@ export default function SmartMortgageCalculator() {
         <p className="text-xs text-foreground/50">
           ריביות ממוצעות לחישוב: {LINKED_RATE_PERCENT}% במסלול צמוד מדד,{" "}
           {UNLINKED_RATE_PERCENT}% במסלול לא צמוד מדד - אינן הצעה מחייבת
-          מבנק כלשהו.
+          מבנק כלשהו. הטבלאות למטה מציגות את כל התמהילים והתקופות יחד,
+          ללא בחירה או ברירת מחדל.
         </p>
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-foreground/80">
-            תמהיל מסלולי ריבית
-          </span>
-          {MIX_OPTIONS.map((option) => (
-            <label
-              key={option.id}
-              className="flex items-center gap-2 text-sm text-foreground/80"
-            >
-              <input
-                type="radio"
-                name="mix"
-                checked={mixId === option.id}
-                onChange={() => setMixId(option.id)}
-                className="h-4 w-4"
-              />
-              {option.label}
-            </label>
-          ))}
-        </div>
-        <Field label="תקופת הלוואה" suffix="שנים">
-          <select
-            value={termYears}
-            onChange={(e) => setTermYears(Number(e.target.value))}
-            className="w-full rounded-lg border border-[var(--tico-line-strong)] px-3 py-2 outline-none focus:border-primary"
-          >
-            {TERM_OPTIONS_YEARS.map((years) => (
-              <option key={years} value={years}>
-                {years} שנה
-              </option>
-            ))}
-          </select>
-        </Field>
         <p className="text-xs text-foreground/50">
           לפי הגיל שהוזן, משך ההלוואה המומלץ עד גיל {RETIREMENT_AGE_CAP} הוא{" "}
           {recommendedMaxTerm} שנים.
@@ -944,7 +927,7 @@ export default function SmartMortgageCalculator() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <ResultCard
-                label="החזר חודשי מינימלי (למשכנתה הנדרשת לעסקה)"
+                label="החזר חודשי מינימלי (הזול מכל האפשרויות, למשכנתה הנדרשת)"
                 value={results.minMonthlyPayment}
               />
               <ResultCard
@@ -1000,6 +983,50 @@ export default function SmartMortgageCalculator() {
                 ✅ הסכום הנדרש לעסקה מכוסה במסגרת תקרת המימון המקסימלית.
               </div>
             )}
+
+            <div>
+              <h3 className="text-sm font-semibold text-foreground/80">
+                טבלת החזר חודשי למשכנתה הנדרשת - לפי תמהיל ותקופה
+              </h3>
+              <p className="text-xs text-foreground/50">
+                ההחזר החודשי עבור סכום המשכנתה הנדרשת הקבוע (
+                {currency.format(results.requiredMortgage)} ₪), לכל תמהיל
+                ותקופה. התא המודגש הוא הזול ביותר.
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--tico-line-strong)] text-right text-foreground/70">
+                    <th className="py-2 pr-2">תמהיל</th>
+                    {TERM_OPTIONS_YEARS.map((years) => (
+                      <th key={years} className="py-2">
+                        {years} שנה
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.requiredPaymentTable.map((row) => (
+                    <tr key={row.mix.id} className="border-b border-[var(--tico-line)]">
+                      <td className="py-2 pr-2 font-medium">{row.mix.label}</td>
+                      {row.byTerm.map((payment, index) => (
+                        <td
+                          key={TERM_OPTIONS_YEARS[index]}
+                          className={
+                            payment === results.minMonthlyPayment
+                              ? "py-2 font-semibold text-foreground"
+                              : "py-2"
+                          }
+                        >
+                          {currency.format(payment)} ₪
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             <div>
               <h3 className="text-sm font-semibold text-foreground/80">
@@ -1317,10 +1344,11 @@ export default function SmartMortgageCalculator() {
                   <tbody>
                     <tr>
                       <td className="tico-report-row-label">
-                        מינימלי (למשכנתה הנדרשת)
+                        מינימלי (הזול מכל האפשרויות, למשכנתה הנדרשת)
                       </td>
                       <td>
-                        {mix.label}, {termYears} שנה
+                        {results.bestCapacityMixLabel},{" "}
+                        {results.bestCapacityTermYears} שנה
                       </td>
                       <td className="tico-report-num">
                         {currency.format(results.minMonthlyPayment)} ₪
@@ -1338,6 +1366,46 @@ export default function SmartMortgageCalculator() {
                         {currency.format(results.desiredMonthlyPayment)} ₪
                       </td>
                     </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="tico-report-section">
+              <div className="tico-report-section-head">
+                <h2>החזר חודשי למשכנתה הנדרשת - לפי תמהיל ותקופה</h2>
+                <div className="tico-report-section-note">
+                  עבור {currency.format(results.requiredMortgage)} ₪ · התא
+                  המודגש הוא הזול ביותר
+                </div>
+              </div>
+              <div className="tico-report-table-wrap">
+                <table className="tico-report-table">
+                  <thead>
+                    <tr>
+                      <th>תמהיל</th>
+                      {TERM_OPTIONS_YEARS.map((years) => (
+                        <th key={years} className="tico-report-num">
+                          {years} שנה
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.requiredPaymentTable.map((row) => (
+                      <tr key={row.mix.id}>
+                        <td className="tico-report-row-label">{row.mix.label}</td>
+                        {row.byTerm.map((payment, index) => (
+                          <td
+                            key={TERM_OPTIONS_YEARS[index]}
+                            className="tico-report-num"
+                            style={payment === results.minMonthlyPayment ? { fontWeight: 800 } : undefined}
+                          >
+                            {currency.format(payment)} ₪
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
