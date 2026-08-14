@@ -39,4 +39,23 @@ body {
     background: #ffffff;
     color: #000000;
   }
+
+  /* מסתיר ווידג'טים צפים שדפדוקי Vercel Preview מזריקים לדף (למשל
+     כפתור ה-Toolbar) - כדי שלא יופיעו כעיגול צף באמצע ה-PDF. */
+  vercel-toolbar,
+  vercel-live-feedback,
+  #vercel-toolbar,
+  #vercel-live-feedback,
+  [id^="vercel-"],
+  [class^="vercel-"],
+  [data-vercel-toolbar] {
+    display: none !important;
+  }
+
+  section,
+  table,
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }
