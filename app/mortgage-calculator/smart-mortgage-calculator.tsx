@@ -71,11 +71,9 @@ const TRANSACTION_TYPES: TransactionType[] = [
 // כללי המימון וההחזר:
 // (1) אחוז המימון המקסימלי (LTV) תלוי בסוג העסקה - ר' TRANSACTION_TYPES.
 // (2) הכנסה פנויה = הכנסה נטו פחות התחייבויות קיימות (אם יש).
-// (3) יחס החזר - מדיניות העבודה: עד 38% מההכנסה הפנויה. התקרה
-//     החוקית לפי הוראת ניהול בנקאי תקין 329 של בנק ישראל היא 50%
-//     מההכנסה (מוצגת בנפרד, לצורך התייחסות בלבד - לא המדיניות המומלצת).
+// (3) יחס החזר - תקרה קבועה יחידה: עד 38% מההכנסה הפנויה. זו התקרה
+//     היחידה שלפיה מחושבת יכולת המימון (בכפוף גם לתקרת ה-LTV).
 const WORKING_PTI_CAP_PERCENT = 38;
-const LEGAL_MAX_PTI_PERCENT = 50;
 
 // יכולת המימון מחושבת לפי תמהיל בין שני מסלולי ריבית ממוצעים - צמוד
 // מדד ולא צמוד מדד - ולפי תקופות הלוואה סטנדרטיות.
@@ -174,18 +172,12 @@ function paymentForBlendedPrincipal(
 function ptiStatus(percent: number) {
   if (percent <= WORKING_PTI_CAP_PERCENT) {
     return {
-      label: "בהתאם למדיניות העבודה (38%)",
+      label: `בתוך תקרת ההחזר (${WORKING_PTI_CAP_PERCENT}%)`,
       className: "text-[var(--tico-good)]",
     };
   }
-  if (percent <= LEGAL_MAX_PTI_PERCENT) {
-    return {
-      label: "מעל מדיניות העבודה, אך בתוך התקרה החוקית (הוראה 329)",
-      className: "text-[var(--tico-warn)]",
-    };
-  }
   return {
-    label: "חורג מהתקרה החוקית לפי הוראה 329",
+    label: `חורג מתקרת ההחזר (${WORKING_PTI_CAP_PERCENT}%) - לא עומד ביכולת`,
     className: "text-[var(--tico-critical)]",
   };
 }
@@ -274,14 +266,16 @@ export default function SmartMortgageCalculator() {
       ? Math.max(existingPropertyValue - existingMortgageBalance, 0)
       : 0;
     const totalAvailableEquity = liquidEquity + netEquityFromSale;
+
+    // משכנתה נדרשת = שווי הנכס כפול אחוז המימון (תקרת ה-LTV של סוג
+    // העסקה כברירת מחדל, או אחוז ידני אם הוגדר) - חישוב נפרד ובלתי
+    // תלוי בהון העצמי בפועל. ההון העצמי נבדק בנפרד למטה (התאמת הון).
     const requiredMortgage = useManualFinancingPercent
       ? propertyValue * (manualFinancingPercent / 100)
-      : Math.max(propertyValue - totalAvailableEquity, 0);
+      : propertyValue * transactionType.ltv;
     const requiredFinancingPercent = useManualFinancingPercent
       ? manualFinancingPercent
-      : propertyValue > 0
-        ? (requiredMortgage / propertyValue) * 100
-        : 0;
+      : transactionType.ltv * 100;
 
     const totalAssociatedCosts =
       lawyerFee + brokerFee + purchaseTax + mortgageAdvisoryFee + otherFees;
@@ -303,21 +297,6 @@ export default function SmartMortgageCalculator() {
       0
     );
 
-    // הכנסה פנויה * 50% - התקרה החוקית (הוראה 329), לצורך התייחסות בלבד.
-    const maxPaymentAtLegalCap = Math.max(
-      disposableIncomeBeforeMortgage * (LEGAL_MAX_PTI_PERCENT / 100),
-      0
-    );
-    const capacityAtLegalCap = principalForBlendedPayment(
-      maxPaymentAtLegalCap,
-      mix.linkedShare,
-      termYears
-    );
-    const maxPossibleMortgage = Math.max(
-      Math.min(ltvCapAmount, capacityAtLegalCap),
-      0
-    );
-
     // טבלת יכולת מימון: לכל תמהיל ריבית ולכל תקופת הלוואה, יכולת ההחזר
     // הגולמית לפי ההכנסה בלבד (מדיניות עבודה של 38% מההכנסה הפנויה) -
     // ללא הגבלת LTV, כדי שההשוואה בין תמהילים ותקופות תהיה אמיתית ולא
@@ -333,12 +312,22 @@ export default function SmartMortgageCalculator() {
     }));
 
     const fundingShortfall = Math.max(
-      requiredMortgage - maxPossibleMortgage,
+      requiredMortgage - recommendedMortgage,
       0
     );
-    const grantedMortgage = Math.min(requiredMortgage, maxPossibleMortgage);
+    const grantedMortgage = Math.min(requiredMortgage, recommendedMortgage);
+    // ההון העצמי צריך לכסות גם את פער המימון וגם את ההוצאות הנלוות -
+    // הבנק לא מממן הוצאות נלוות. בדיקת התאמה נפרדת מגובה המשכנתה.
     const totalCashNeededAtClosing =
       propertyValue - grantedMortgage + totalAssociatedCosts;
+    const equityShortfall = Math.max(
+      totalCashNeededAtClosing - totalAvailableEquity,
+      0
+    );
+    const equitySurplus = Math.max(
+      totalAvailableEquity - totalCashNeededAtClosing,
+      0
+    );
 
     const minMonthlyPayment = paymentForBlendedPrincipal(
       requiredMortgage,
@@ -347,11 +336,6 @@ export default function SmartMortgageCalculator() {
     );
     const desiredMonthlyPayment = paymentForBlendedPrincipal(
       recommendedMortgage,
-      mix.linkedShare,
-      termYears
-    );
-    const maxMonthlyPayment = paymentForBlendedPrincipal(
-      maxPossibleMortgage,
       mix.linkedShare,
       termYears
     );
@@ -373,14 +357,14 @@ export default function SmartMortgageCalculator() {
       requiredFinancingPercent,
       totalAssociatedCosts,
       ltvCapAmount,
-      maxPossibleMortgage,
       recommendedMortgage,
       capacityTable,
       fundingShortfall,
       totalCashNeededAtClosing,
+      equityShortfall,
+      equitySurplus,
       minMonthlyPayment,
       desiredMonthlyPayment,
-      maxMonthlyPayment,
       actualPtiPercent,
       disposableIncomeAfterMortgage,
     };
@@ -436,13 +420,17 @@ export default function SmartMortgageCalculator() {
           ["יחס החזר בפועל (%)", Number(results.actualPtiPercent.toFixed(1))],
           ["משכנתה נדרשת לעסקה (₪)", results.requiredMortgage],
           ["אחוז מימון נדרש (%)", Number(results.requiredFinancingPercent.toFixed(1))],
-          ["משכנתה מומלצת (₪)", results.recommendedMortgage],
-          ["משכנתה מקסימלית אפשרית (₪)", results.maxPossibleMortgage],
+          ["משכנתה מקסימלית אפשרית (₪)", results.recommendedMortgage],
           ["החזר חודשי מינימלי (₪)", Math.round(results.minMonthlyPayment)],
           ["החזר חודשי רצוי (₪)", Math.round(results.desiredMonthlyPayment)],
-          ["החזר חודשי מקסימלי (₪)", Math.round(results.maxMonthlyPayment)],
           ["סה״כ הוצאות נלוות (₪)", results.totalAssociatedCosts],
           ["סה״כ מזומן נדרש בסגירת העסקה (₪)", Math.round(results.totalCashNeededAtClosing)],
+          [
+            "התאמת הון עצמי",
+            results.equityShortfall > 0
+              ? `חסר ${Math.round(results.equityShortfall)} ₪`
+              : `עודף ${Math.round(results.equitySurplus)} ₪`,
+          ],
           [
             "הכנסה פנויה אחרי ההחזר הרצוי (₪)",
             Math.round(results.disposableIncomeAfterMortgage),
@@ -740,9 +728,8 @@ export default function SmartMortgageCalculator() {
           {recommendedMaxTerm} שנים.
         </p>
         <p className="text-xs text-foreground/50">
-          יחס החזר - עד {WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה (מדיניות
-          העבודה). התקרה החוקית לפי הוראת בנק ישראל 329 היא{" "}
-          {LEGAL_MAX_PTI_PERCENT}% מההכנסה הפנויה.
+          יחס החזר - תקרה קבועה של עד {WORKING_PTI_CAP_PERCENT}% מההכנסה
+          הפנויה.
         </p>
       </section>
 
@@ -775,18 +762,14 @@ export default function SmartMortgageCalculator() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <ResultCard
                 label="החזר חודשי מינימלי (למשכנתה הנדרשת לעסקה)"
                 value={results.minMonthlyPayment}
               />
               <ResultCard
-                label="החזר חודשי רצוי"
+                label="החזר חודשי רצוי (לתקרת יכולת המימון)"
                 value={results.desiredMonthlyPayment}
-              />
-              <ResultCard
-                label="החזר חודשי מקסימלי (תקרת 50%)"
-                value={results.maxMonthlyPayment}
               />
             </div>
 
@@ -803,7 +786,7 @@ export default function SmartMortgageCalculator() {
                     <td className="py-2 pr-2">
                       {useManualFinancingPercent
                         ? "נדרשת לעסקה (לפי אחוז מימון ידני)"
-                        : "נדרשת לעסקה (מחיר נכס בניכוי הון עצמי זמין)"}
+                        : `נדרשת לעסקה (לפי תקרת מימון LTV של ${transactionType.label})`}
                     </td>
                     <td className="py-2">
                       {currency.format(results.requiredMortgage)} ₪ (
@@ -812,21 +795,13 @@ export default function SmartMortgageCalculator() {
                   </tr>
                   <tr className="border-b border-[var(--tico-line)]">
                     <td className="py-2 pr-2">
-                      מומלצת (לפי מדיניות עבודה {WORKING_PTI_CAP_PERCENT}%,{" "}
-                      {mix.label}, {termYears} שנה)
-                    </td>
-                    <td className="py-2">
-                      {currency.format(results.recommendedMortgage)} ₪
-                    </td>
-                  </tr>
-                  <tr className="border-b border-[var(--tico-line)]">
-                    <td className="py-2 pr-2">
-                      מקסימלית אפשרית ({transactionType.label}, תקרת LTV{" "}
-                      {Math.round(transactionType.ltv * 100)}% / תקרת החזר{" "}
-                      {LEGAL_MAX_PTI_PERCENT}%)
+                      מקסימלית אפשרית (יחס החזר {WORKING_PTI_CAP_PERCENT}%,{" "}
+                      {transactionType.label} - תקרת LTV{" "}
+                      {Math.round(transactionType.ltv * 100)}%, {mix.label},{" "}
+                      {termYears} שנה)
                     </td>
                     <td className="py-2 font-semibold text-foreground">
-                      {currency.format(results.maxPossibleMortgage)} ₪
+                      {currency.format(results.recommendedMortgage)} ₪
                     </td>
                   </tr>
                 </tbody>
@@ -910,6 +885,19 @@ export default function SmartMortgageCalculator() {
               />
             </div>
 
+            {results.equityShortfall > 0 ? (
+              <div className="rounded-xl bg-[var(--tico-critical-soft)] px-4 py-3 text-sm text-[var(--tico-critical)]">
+                ⚠️ חסר הון עצמי של {currency.format(results.equityShortfall)} ₪
+                לכיסוי ההפרש בין שווי הנכס למשכנתה וההוצאות הנלוות (הבנק אינו
+                מממן הוצאות נלוות).
+              </div>
+            ) : (
+              <div className="rounded-xl bg-[var(--tico-good-soft)] px-4 py-3 text-sm text-[var(--tico-good)]">
+                ✅ ההון העצמי הזמין מכסה את ההפרש והוצאות העסקה, עם יתרה של{" "}
+                {currency.format(results.equitySurplus)} ₪.
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center gap-3 print:hidden">
               <button
                 type="button"
@@ -976,9 +964,7 @@ export default function SmartMortgageCalculator() {
         const badgeClass =
           results.actualPtiPercent <= WORKING_PTI_CAP_PERCENT
             ? "tico-report-badge-good"
-            : results.actualPtiPercent <= LEGAL_MAX_PTI_PERCENT
-              ? "tico-report-badge-warn"
-              : "tico-report-badge-bad";
+            : "tico-report-badge-bad";
         return (
           <>
             <header className="tico-report-letterhead">
@@ -1060,13 +1046,13 @@ export default function SmartMortgageCalculator() {
                     משכנתה מקסימלית אפשרית
                   </div>
                   <div className="tico-report-hero-number">
-                    {currency.format(results.maxPossibleMortgage)}
+                    {currency.format(results.recommendedMortgage)}
                     <span className="tico-report-unit">₪</span>
                   </div>
                   <div className="tico-report-hero-sub">
                     לפי {transactionType.label} (תקרת LTV{" "}
                     {Math.round(transactionType.ltv * 100)}%) ותקרת החזר{" "}
-                    {LEGAL_MAX_PTI_PERCENT}% מההכנסה הפנויה · תמהיל {mix.label},{" "}
+                    {WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה · תמהיל {mix.label},{" "}
                     {termYears} שנה.
                     <br />
                     <span className={`tico-report-badge ${badgeClass}`}>
@@ -1085,12 +1071,6 @@ export default function SmartMortgageCalculator() {
                     </div>
                     <div className="tico-report-card-v">
                       {currency.format(results.requiredMortgage)} ₪
-                    </div>
-                  </div>
-                  <div className="tico-report-card">
-                    <div className="tico-report-card-k">משכנתה מומלצת</div>
-                    <div className="tico-report-card-v">
-                      {currency.format(results.recommendedMortgage)} ₪
                     </div>
                   </div>
                 </div>
@@ -1158,17 +1138,11 @@ export default function SmartMortgageCalculator() {
                       </td>
                     </tr>
                     <tr>
-                      <td className="tico-report-row-label">רצוי</td>
+                      <td className="tico-report-row-label">
+                        רצוי (לתקרת יכולת המימון, {WORKING_PTI_CAP_PERCENT}%)
+                      </td>
                       <td className="tico-report-num">
                         {currency.format(results.desiredMonthlyPayment)} ₪
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="tico-report-row-label">
-                        מקסימלי (תקרת {LEGAL_MAX_PTI_PERCENT}%)
-                      </td>
-                      <td className="tico-report-num">
-                        {currency.format(results.maxMonthlyPayment)} ₪
                       </td>
                     </tr>
                   </tbody>
@@ -1217,7 +1191,7 @@ export default function SmartMortgageCalculator() {
               </div>
               <div
                 className="tico-report-grid"
-                style={{ "--tico-report-cols": 3 } as CSSProperties}
+                style={{ "--tico-report-cols": 4 } as CSSProperties}
               >
                 <div className="tico-report-card">
                   <div className="tico-report-card-k">שווי נכס נרכש</div>
@@ -1232,6 +1206,12 @@ export default function SmartMortgageCalculator() {
                   </div>
                 </div>
                 <div className="tico-report-card">
+                  <div className="tico-report-card-k">הוצאות נלוות</div>
+                  <div className="tico-report-card-v">
+                    {currency.format(results.totalAssociatedCosts)} ₪
+                  </div>
+                </div>
+                <div className="tico-report-card">
                   <div className="tico-report-card-k">
                     סה״כ מזומן נדרש בסגירה
                   </div>
@@ -1240,6 +1220,11 @@ export default function SmartMortgageCalculator() {
                   </div>
                 </div>
               </div>
+              <p className="tico-report-section-note" style={{ marginTop: 8 }}>
+                {results.equityShortfall > 0
+                  ? `⚠ חסר הון עצמי של ${currency.format(results.equityShortfall)} ₪ לכיסוי ההפרש והוצאות העסקה (הבנק אינו מממן הוצאות נלוות).`
+                  : `✅ ההון העצמי מכסה את ההפרש והוצאות העסקה, יתרה של ${currency.format(results.equitySurplus)} ₪.`}
+              </p>
             </section>
 
             {notes && (
