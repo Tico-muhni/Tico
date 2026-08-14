@@ -102,6 +102,21 @@ const MIX_OPTIONS: MixOption[] = [
   },
 ];
 
+// כללי המימון של מחיר למשתכן (הוראת ניהול בנקאי תקין 329, סעיף 4א) -
+// זהה לחישוב במחשבון ההגרלות (lottery-calculator): אם שווי השוק (המחיר
+// לפני הנחה) עולה על 2.1 מיליון ₪, שווי הנכס לצורך המשכנתה הוא הגבוה
+// מבין 2.1 מיליון ₪ לבין מחיר החוזה. המשכנתה עד 75% משווי זה, ולא
+// יותר ממחיר החוזה בניכוי מינימום הון עצמי (תלוי במענק מקום).
+const MECHIR_PRICE_CAP = 2_100_000;
+const MECHIR_LTV = 0.75;
+const MECHIR_MIN_EQUITY_WITH_GRANT = 60_000;
+const MECHIR_MIN_EQUITY_NO_GRANT = 100_000;
+const MECHIR_GRANT_OPTIONS = [
+  { value: 0, label: "אין מענק (0 ₪)" },
+  { value: 40_000, label: "40,000 ₪" },
+  { value: 60_000, label: "60,000 ₪" },
+];
+
 const DEFAULT_RECOGNITION_PERCENT = 70;
 const MIN_TERM_YEARS = 4;
 const MAX_TERM_YEARS = 30;
@@ -203,6 +218,12 @@ export default function SmartMortgageCalculator() {
   const [existingPropertyLocation, setExistingPropertyLocation] =
     useState("");
   const [propertyValue, setPropertyValue] = useState<number>(0);
+  const [isMechirLamishtaken, setIsMechirLamishtaken] = useState(false);
+  const [mechirMarketValue, setMechirMarketValue] = useState<number>(0);
+  const [mechirDiscountPercent, setMechirDiscountPercent] =
+    useState<number>(25);
+  const [mechirDiscountCap, setMechirDiscountCap] = useState<number>(500_000);
+  const [mechirGrant, setMechirGrant] = useState<number>(0);
   const [newPropertyLocation, setNewPropertyLocation] = useState("");
   const [propertyType, setPropertyType] = useState("");
   const [propertyRegistration, setPropertyRegistration] = useState("");
@@ -239,6 +260,23 @@ export default function SmartMortgageCalculator() {
 
   const mix = MIX_OPTIONS.find((option) => option.id === mixId) ?? MIX_OPTIONS[0];
 
+  // עסקת מחיר למשתכן: מחיר החוזה בפועל = שווי השוק בניכוי ההנחה (הנמוך
+  // מבין אחוז ותקרה, כמו במחשבון ההגרלות) - וזה שווי הנכס האפקטיבי
+  // שמשמש לכל שאר החישובים (הון עצמי, הוצאות נלוות וכו').
+  const mechirDiscount = isMechirLamishtaken
+    ? Math.min(
+        (mechirDiscountPercent / 100) * mechirMarketValue,
+        mechirDiscountCap,
+        mechirMarketValue
+      )
+    : 0;
+  const mechirContractPrice = isMechirLamishtaken
+    ? Math.max(mechirMarketValue - mechirDiscount, 0)
+    : 0;
+  const effectivePropertyValue = isMechirLamishtaken
+    ? mechirContractPrice
+    : propertyValue;
+
   const activeBorrowersForAge = hasSecondBorrower ? borrowers : [borrowers[0]];
   const oldestBorrowerAge = Math.max(
     ...activeBorrowersForAge.map((b) => b.age)
@@ -267,20 +305,50 @@ export default function SmartMortgageCalculator() {
       : 0;
     const totalAvailableEquity = liquidEquity + netEquityFromSale;
 
+    // מחיר למשתכן: תקרת המימון לפי שווי הייחוס (הגבוה מבין 2.1 מיליון
+    // ₪ למחיר החוזה, כשהשוק עולה על 2.1 מיליון) - ולא יותר ממחיר החוזה
+    // בניכוי מינימום הון עצמי (תלוי במענק מקום). זהה למחשבון ההגרלות.
+    const mechirMinEquity =
+      mechirGrant > 0 ? MECHIR_MIN_EQUITY_WITH_GRANT : MECHIR_MIN_EQUITY_NO_GRANT;
+    const mechirRecognizedValue =
+      mechirMarketValue > MECHIR_PRICE_CAP
+        ? Math.max(MECHIR_PRICE_CAP, mechirContractPrice)
+        : mechirMarketValue;
+    const mechirLtvCapAmount = isMechirLamishtaken
+      ? Math.max(
+          Math.min(
+            MECHIR_LTV * mechirRecognizedValue,
+            mechirContractPrice - mechirMinEquity
+          ),
+          0
+        )
+      : 0;
+
     // משכנתה נדרשת = שווי הנכס כפול אחוז המימון (תקרת ה-LTV של סוג
-    // העסקה כברירת מחדל, או אחוז ידני אם הוגדר) - חישוב נפרד ובלתי
-    // תלוי בהון העצמי בפועל. ההון העצמי נבדק בנפרד למטה (התאמת הון).
+    // העסקה כברירת מחדל, תקרת מחיר למשתכן אם זו עסקה כזו, או אחוז ידני
+    // אם הוגדר) - חישוב נפרד ובלתי תלוי בהון העצמי בפועל. ההון העצמי
+    // נבדק בנפרד למטה (התאמת הון).
     const requiredMortgage = useManualFinancingPercent
-      ? propertyValue * (manualFinancingPercent / 100)
-      : propertyValue * transactionType.ltv;
+      ? effectivePropertyValue * (manualFinancingPercent / 100)
+      : isMechirLamishtaken
+        ? mechirLtvCapAmount
+        : effectivePropertyValue * transactionType.ltv;
     const requiredFinancingPercent = useManualFinancingPercent
       ? manualFinancingPercent
-      : transactionType.ltv * 100;
+      : isMechirLamishtaken
+        ? effectivePropertyValue > 0
+          ? (requiredMortgage / effectivePropertyValue) * 100
+          : 0
+        : transactionType.ltv * 100;
 
     const totalAssociatedCosts =
       lawyerFee + brokerFee + purchaseTax + mortgageAdvisoryFee + otherFees;
 
-    const ltvCapAmount = propertyValue > 0 ? propertyValue * transactionType.ltv : Infinity;
+    const ltvCapAmount = isMechirLamishtaken
+      ? mechirLtvCapAmount
+      : effectivePropertyValue > 0
+        ? effectivePropertyValue * transactionType.ltv
+        : Infinity;
 
     // הכנסה פנויה * 38% - מדיניות העבודה (סעיף 2).
     const maxPaymentAtWorkingCap = Math.max(
@@ -323,7 +391,7 @@ export default function SmartMortgageCalculator() {
     // ההון העצמי צריך לכסות גם את פער המימון וגם את ההוצאות הנלוות -
     // הבנק לא מממן הוצאות נלוות. בדיקת התאמה נפרדת מגובה המשכנתה.
     const totalCashNeededAtClosing =
-      propertyValue - grantedMortgage + totalAssociatedCosts;
+      effectivePropertyValue - grantedMortgage + totalAssociatedCosts;
     const equityShortfall = Math.max(
       totalCashNeededAtClosing - totalAvailableEquity,
       0
@@ -382,7 +450,11 @@ export default function SmartMortgageCalculator() {
     liquidEquity,
     useManualFinancingPercent,
     manualFinancingPercent,
-    propertyValue,
+    effectivePropertyValue,
+    isMechirLamishtaken,
+    mechirMarketValue,
+    mechirContractPrice,
+    mechirGrant,
     lawyerFee,
     brokerFee,
     purchaseTax,
@@ -394,7 +466,7 @@ export default function SmartMortgageCalculator() {
   ]);
 
   const status = ptiStatus(results.actualPtiPercent);
-  const hasEnoughData = propertyValue > 0 && results.totalIncome > 0;
+  const hasEnoughData = effectivePropertyValue > 0 && results.totalIncome > 0;
 
   function handlePrintPdf() {
     window.print();
@@ -413,8 +485,16 @@ export default function SmartMortgageCalculator() {
         name: "סיכום",
         rows: [
           ["תאריך", dateLabel],
-          ["סוג עסקה", transactionType.label],
-          ["שווי נכס נרכש (₪)", propertyValue],
+          ["סוג עסקה", isMechirLamishtaken ? "מחיר למשתכן" : transactionType.label],
+          ["שווי נכס נרכש (₪)", effectivePropertyValue],
+          ...(isMechirLamishtaken
+            ? ([
+                ["שווי שוק (לפני הנחה) (₪)", mechirMarketValue],
+                ["הנחה (₪)", Math.round(mechirDiscount)],
+                ["מחיר חוזה (₪)", Math.round(mechirContractPrice)],
+                ["מענק מקום (₪)", mechirGrant],
+              ] as (string | number)[][])
+            : []),
           ["הון עצמי זמין (₪)", results.totalAvailableEquity],
           ["תמהיל מסלולי ריבית", mix.label],
           ["תקופת הלוואה (שנים)", termYears],
@@ -543,29 +623,105 @@ export default function SmartMortgageCalculator() {
 
       <section className="flex flex-col gap-4 rounded-2xl border border-[var(--tico-line)] bg-surface p-6 shadow-[var(--tico-shadow)]">
         <h2 className="text-lg font-semibold text-foreground">פרטי הנכס</h2>
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-foreground/80">
-            סיווג לצורך אחוז מימון מקסימלי (LTV)
-          </span>
-          {TRANSACTION_TYPES.map((type) => (
-            <label
-              key={type.id}
-              className="flex items-center gap-2 text-sm text-foreground/80"
-            >
-              <input
-                type="radio"
-                name="transactionType"
-                checked={transactionTypeId === type.id}
-                onChange={() => setTransactionTypeId(type.id)}
-                className="h-4 w-4"
-              />
-              <span>
-                {type.label}{" "}
-                <span className="text-foreground/50">({type.note})</span>
+
+        <label className="flex items-center gap-2 text-sm text-foreground/80">
+          <input
+            type="checkbox"
+            checked={isMechirLamishtaken}
+            onChange={(e) => setIsMechirLamishtaken(e.target.checked)}
+            className="h-4 w-4"
+          />
+          עסקת מחיר למשתכן
+        </label>
+
+        {isMechirLamishtaken ? (
+          <div className="flex flex-col gap-4 rounded-xl bg-background p-4">
+            <p className="text-xs text-foreground/50">
+              משכנתה עד {Math.round(MECHIR_LTV * 100)}% משווי הייחוס - הגבוה
+              מבין {currency.format(MECHIR_PRICE_CAP)} ₪ למחיר החוזה, אם
+              שווי השוק (המחיר לפני הנחה) עולה על {currency.format(MECHIR_PRICE_CAP)}{" "}
+              ₪ - ולא יותר ממחיר החוזה בניכוי מינימום הון עצמי (הוראת ניהול
+              בנקאי תקין 329, סעיף 4א).
+            </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="שווי שוק (מחיר לפני הנחה)" suffix="₪">
+                <NumberInput
+                  value={mechirMarketValue}
+                  onChange={setMechirMarketValue}
+                  min={0}
+                />
+              </Field>
+              <Field label="אחוז הנחה" suffix="%">
+                <NumberInput
+                  value={mechirDiscountPercent}
+                  onChange={setMechirDiscountPercent}
+                  min={0}
+                  max={100}
+                />
+              </Field>
+              <Field label="תקרת הנחה מקסימלית" suffix="₪">
+                <NumberInput
+                  value={mechirDiscountCap}
+                  onChange={setMechirDiscountCap}
+                  min={0}
+                />
+              </Field>
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-foreground/80">
+                מענק מקום
               </span>
-            </label>
-          ))}
-        </div>
+              <div className="flex flex-wrap gap-4">
+                {MECHIR_GRANT_OPTIONS.map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex items-center gap-2 text-sm text-foreground/80"
+                  >
+                    <input
+                      type="radio"
+                      name="mechirGrant"
+                      checked={mechirGrant === option.value}
+                      onChange={() => setMechirGrant(option.value)}
+                      className="h-4 w-4"
+                    />
+                    {option.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <ResultCard label="הנחה בפועל" value={mechirDiscount} />
+              <ResultCard
+                label="מחיר חוזה (שווי הנכס בפועל)"
+                value={mechirContractPrice}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-foreground/80">
+              סיווג לצורך אחוז מימון מקסימלי (LTV)
+            </span>
+            {TRANSACTION_TYPES.map((type) => (
+              <label
+                key={type.id}
+                className="flex items-center gap-2 text-sm text-foreground/80"
+              >
+                <input
+                  type="radio"
+                  name="transactionType"
+                  checked={transactionTypeId === type.id}
+                  onChange={() => setTransactionTypeId(type.id)}
+                  className="h-4 w-4"
+                />
+                <span>
+                  {type.label}{" "}
+                  <span className="text-foreground/50">({type.note})</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
 
         <label className="flex items-center gap-2 text-sm text-foreground/80">
           <input
@@ -602,13 +758,15 @@ export default function SmartMortgageCalculator() {
         )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="שווי נכס נרכש / מחיר רכישה" suffix="₪">
-            <NumberInput
-              value={propertyValue}
-              onChange={setPropertyValue}
-              min={0}
-            />
-          </Field>
+          {!isMechirLamishtaken && (
+            <Field label="שווי נכס נרכש / מחיר רכישה" suffix="₪">
+              <NumberInput
+                value={propertyValue}
+                onChange={setPropertyValue}
+                min={0}
+              />
+            </Field>
+          )}
           <Field label="מיקום הנכס הנרכש">
             <TextInput
               value={newPropertyLocation}
@@ -795,7 +953,9 @@ export default function SmartMortgageCalculator() {
                     <td className="py-2 pr-2">
                       {useManualFinancingPercent
                         ? "נדרשת לעסקה (לפי אחוז מימון ידני)"
-                        : `נדרשת לעסקה (לפי תקרת מימון LTV של ${transactionType.label})`}
+                        : isMechirLamishtaken
+                          ? "נדרשת לעסקה (לפי כללי מחיר למשתכן)"
+                          : `נדרשת לעסקה (לפי תקרת מימון LTV של ${transactionType.label})`}
                     </td>
                     <td className="py-2">
                       {currency.format(results.requiredMortgage)} ₪ (
@@ -804,10 +964,9 @@ export default function SmartMortgageCalculator() {
                   </tr>
                   <tr className="border-b border-[var(--tico-line)]">
                     <td className="py-2 pr-2">
-                      מקסימלית אפשרית (יחס החזר {WORKING_PTI_CAP_PERCENT}%,{" "}
-                      {transactionType.label} - תקרת LTV{" "}
-                      {Math.round(transactionType.ltv * 100)}%, {mix.label},{" "}
-                      {termYears} שנה)
+                      {isMechirLamishtaken
+                        ? `מקסימלית אפשרית (יחס החזר ${WORKING_PTI_CAP_PERCENT}%, מחיר למשתכן, ${mix.label}, ${termYears} שנה)`
+                        : `מקסימלית אפשרית (יחס החזר ${WORKING_PTI_CAP_PERCENT}%, ${transactionType.label} - תקרת LTV ${Math.round(transactionType.ltv * 100)}%, ${mix.label}, ${termYears} שנה)`}
                     </td>
                     <td className="py-2 font-semibold text-foreground">
                       {currency.format(results.recommendedMortgage)} ₪
@@ -999,7 +1158,7 @@ export default function SmartMortgageCalculator() {
                 </div>
                 <div>
                   <strong>סוג עסקה: </strong>
-                  {transactionType.label}
+                  {isMechirLamishtaken ? "מחיר למשתכן" : transactionType.label}
                 </div>
               </div>
             </header>
@@ -1062,10 +1221,11 @@ export default function SmartMortgageCalculator() {
                     <span className="tico-report-unit">₪</span>
                   </div>
                   <div className="tico-report-hero-sub">
-                    לפי {transactionType.label} (תקרת LTV{" "}
-                    {Math.round(transactionType.ltv * 100)}%) ותקרת החזר{" "}
-                    {WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה · תמהיל {mix.label},{" "}
-                    {termYears} שנה.
+                    {isMechirLamishtaken
+                      ? `לפי כללי מחיר למשתכן (תקרת LTV ${Math.round(MECHIR_LTV * 100)}%)`
+                      : `לפי ${transactionType.label} (תקרת LTV ${Math.round(transactionType.ltv * 100)}%)`}{" "}
+                    ותקרת החזר {WORKING_PTI_CAP_PERCENT}% מההכנסה הפנויה · תמהיל{" "}
+                    {mix.label}, {termYears} שנה.
                     <br />
                     <span className={`tico-report-badge ${badgeClass}`}>
                       {results.fundingShortfall > 0
@@ -1212,7 +1372,7 @@ export default function SmartMortgageCalculator() {
                 <div className="tico-report-card">
                   <div className="tico-report-card-k">שווי נכס נרכש</div>
                   <div className="tico-report-card-v">
-                    {currency.format(propertyValue)} ₪
+                    {currency.format(effectivePropertyValue)} ₪
                   </div>
                 </div>
                 <div className="tico-report-card">
@@ -1236,6 +1396,31 @@ export default function SmartMortgageCalculator() {
                   </div>
                 </div>
               </div>
+              {isMechirLamishtaken && (
+                <div
+                  className="tico-report-grid"
+                  style={{ "--tico-report-cols": 3, marginTop: 10 } as CSSProperties}
+                >
+                  <div className="tico-report-card">
+                    <div className="tico-report-card-k">שווי שוק (לפני הנחה)</div>
+                    <div className="tico-report-card-v">
+                      {currency.format(mechirMarketValue)} ₪
+                    </div>
+                  </div>
+                  <div className="tico-report-card">
+                    <div className="tico-report-card-k">הנחה (מחיר למשתכן)</div>
+                    <div className="tico-report-card-v">
+                      {currency.format(mechirDiscount)} ₪
+                    </div>
+                  </div>
+                  <div className="tico-report-card">
+                    <div className="tico-report-card-k">מענק מקום</div>
+                    <div className="tico-report-card-v">
+                      {currency.format(mechirGrant)} ₪
+                    </div>
+                  </div>
+                </div>
+              )}
               <p className="tico-report-section-note" style={{ marginTop: 8 }}>
                 {results.equityShortfall > 0
                   ? `⚠ חסר הון עצמי של ${currency.format(results.equityShortfall)} ₪ לכיסוי ההפרש והוצאות העסקה (הבנק אינו מממן הוצאות נלוות).`
