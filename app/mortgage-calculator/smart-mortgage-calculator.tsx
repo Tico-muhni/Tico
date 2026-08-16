@@ -318,23 +318,6 @@ export default function SmartMortgageCalculator() {
         )
       : 0;
 
-    // משכנתה נדרשת = שווי הנכס כפול אחוז המימון (תקרת ה-LTV של סוג
-    // העסקה כברירת מחדל, תקרת מחיר למשתכן אם זו עסקה כזו, או אחוז ידני
-    // אם הוגדר) - חישוב נפרד ובלתי תלוי בהון העצמי בפועל. ההון העצמי
-    // נבדק בנפרד למטה (התאמת הון).
-    const requiredMortgage = useManualFinancingPercent
-      ? effectivePropertyValue * (manualFinancingPercent / 100)
-      : isMechirLamishtaken
-        ? mechirLtvCapAmount
-        : effectivePropertyValue * transactionType.ltv;
-    const requiredFinancingPercent = useManualFinancingPercent
-      ? manualFinancingPercent
-      : isMechirLamishtaken
-        ? effectivePropertyValue > 0
-          ? (requiredMortgage / effectivePropertyValue) * 100
-          : 0
-        : transactionType.ltv * 100;
-
     const totalAssociatedCosts =
       lawyerFee + brokerFee + purchaseTax + mortgageAdvisoryFee + otherFees;
 
@@ -387,6 +370,16 @@ export default function SmartMortgageCalculator() {
       Math.min(ltvCapAmount, bestCapacityAmount),
       0
     );
+
+    // משכנתה נדרשת: באחוז ידני - לפי מה שהמשתמש הגדיר (יכול לחרוג מיכולת
+    // ואז יוצג חסר מימון). ללא אחוז ידני - לפי המשכנתה המומלצת שכבר
+    // מגבילה גם לפי LTV וגם לפי יכולת הכנסה.
+    const requiredMortgage = useManualFinancingPercent
+      ? effectivePropertyValue * (manualFinancingPercent / 100)
+      : recommendedMortgage;
+    const requiredFinancingPercent = effectivePropertyValue > 0
+      ? (requiredMortgage / effectivePropertyValue) * 100
+      : 0;
 
     const fundingShortfall = Math.max(
       requiredMortgage - recommendedMortgage,
