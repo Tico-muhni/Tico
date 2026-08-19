@@ -34,6 +34,7 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
   const [isSocialPending, startSocial] = useTransition();
   const [socialPost, setSocialPost] = useState<string | null>(null);
   const [socialError, setSocialError] = useState<string | null>(null);
+  const [socialErrorIsQuota, setSocialErrorIsQuota] = useState(false);
   const [copied, setCopied] = useState(false);
 
   function setStatus(status: "approved" | "dismissed") {
@@ -44,11 +45,14 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
 
   function makeSocialPost() {
     setSocialError(null);
+    setSocialErrorIsQuota(false);
     setCopied(false);
     startSocial(async () => {
       const result = await generateSocialPostAction(brief.id);
-      if (result.error) setSocialError(result.error);
-      else setSocialPost(result.text);
+      if (result.error) {
+        setSocialError(result.error);
+        setSocialErrorIsQuota(!!result.quota);
+      } else setSocialPost(result.text);
     });
   }
 
@@ -195,9 +199,23 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
               onFocus={(e) => e.currentTarget.select()}
             />
           )}
-          {socialError && (
-            <p className="mt-2 text-xs font-medium text-red-600">{socialError}</p>
-          )}
+          {socialError &&
+            (socialErrorIsQuota ? (
+              <p
+                className="mt-2 rounded-lg border p-2 text-xs font-medium"
+                style={{
+                  backgroundColor: "#FEF6E7",
+                  borderColor: "#F0C36D",
+                  color: "#8A6D1B",
+                }}
+              >
+                🕛 {socialError}
+              </p>
+            ) : (
+              <p className="mt-2 text-xs font-medium text-red-600">
+                {socialError}
+              </p>
+            ))}
           {!socialPost && !socialError && !isSocialPending && (
             <p className="mt-1 text-xs" style={{ color: "#5B7385" }}>
               טקסט כתוב מוכן להדבקה בסטטוס וואטסאפ או בפוסט בפייסבוק.

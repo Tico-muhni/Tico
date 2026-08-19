@@ -11,7 +11,22 @@ import {
 } from "@/lib/generate-rtm-briefs";
 import { generateSocialPost, type BriefStyle } from "@/lib/rtm-brief";
 
-type ActionResult = { error: string | null; success: string | null };
+type ActionResult = {
+  error: string | null;
+  success: string | null;
+  quota?: boolean;
+};
+
+// Shown when the advisor's free Gemini key hits its daily request limit. It's
+// not a bug, so the message reassures and says what to do.
+const QUOTA_MESSAGE =
+  "נגמרה המכסה החינמית של Gemini להיום. זו לא תקלה — המפתח החינמי הגיע לתקרת הבקשות היומית. אפשר לנסות שוב מחר (המכסה מתאפסת אוטומטית), או ליצור מפתח Gemini חדש בחינם ולעדכן אותו.";
+
+// The Gemini free tier signals an exhausted quota with 429 / RESOURCE_EXHAUSTED.
+function isQuotaError(err: unknown): boolean {
+  const raw = err instanceof Error ? err.message : String(err);
+  return /429|quota|resource_exhausted/i.test(raw);
+}
 
 export async function scanNewsAction(): Promise<ActionResult> {
   const user = await currentUser();
@@ -57,13 +72,11 @@ export async function generateBriefAction(
     revalidatePath("/admin/rtm");
     return { error: null, success: null };
   } catch (err) {
-    const raw = err instanceof Error ? err.message : String(err);
-    const quotaHit = /429|quota|resource_exhausted/i.test(raw);
+    const quotaHit = isQuotaError(err);
     return {
-      error: quotaHit
-        ? "המכסה היומית החינמית של ה-AI נוצלה — נסו שוב מאוחר יותר או מחר (המכסה מתאפסת כל יום)."
-        : "יצירת הבריף נכשלה — אפשר לנסות שוב.",
+      error: quotaHit ? QUOTA_MESSAGE : "יצירת הבריף נכשלה — אפשר לנסות שוב.",
       success: null,
+      quota: quotaHit,
     };
   }
 }
@@ -90,7 +103,7 @@ export async function deleteNewsItemAction(newsItemId: string) {
  */
 export async function generateSocialPostAction(
   briefId: string
-): Promise<{ text: string | null; error: string | null }> {
+): Promise<{ text: string | null; error: string | null; quota?: boolean }> {
   const user = await currentUser();
   if (!user) return { text: null, error: "יש להתחבר מחדש" };
   if (!user.geminiApiKey) {
@@ -112,13 +125,11 @@ export async function generateSocialPostAction(
     const text = await generateSocialPost(brief, user.geminiApiKey);
     return { text, error: null };
   } catch (err) {
-    const raw = err instanceof Error ? err.message : String(err);
-    const quotaHit = /429|quota|resource_exhausted/i.test(raw);
+    const quotaHit = isQuotaError(err);
     return {
       text: null,
-      error: quotaHit
-        ? "המכסה היומית החינמית של ה-AI נוצלה — נסו שוב מאוחר יותר או מחר."
-        : "יצירת הפוסט נכשלה — אפשר לנסות שוב.",
+      error: quotaHit ? QUOTA_MESSAGE : "יצירת הפוסט נכשלה — אפשר לנסות שוב.",
+      quota: quotaHit,
     };
   }
 }
