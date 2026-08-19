@@ -9,7 +9,7 @@ import {
   scanForCandidates,
   generateBriefForNewsItem,
 } from "@/lib/generate-rtm-briefs";
-import type { BriefStyle } from "@/lib/rtm-brief";
+import { generateSocialPost, type BriefStyle } from "@/lib/rtm-brief";
 
 type ActionResult = { error: string | null; success: string | null };
 
@@ -82,6 +82,45 @@ export async function deleteNewsItemAction(newsItemId: string) {
       and(eq(rtmNewsItems.id, newsItemId), eq(rtmNewsItems.userId, user.id))
     );
   revalidatePath("/admin/rtm");
+}
+
+/**
+ * Adapt an existing brief into a ready-to-paste WhatsApp/Facebook post. Runs on
+ * demand (the result isn't stored), scoped to the current advisor.
+ */
+export async function generateSocialPostAction(
+  briefId: string
+): Promise<{ text: string | null; error: string | null }> {
+  const user = await currentUser();
+  if (!user) return { text: null, error: "יש להתחבר מחדש" };
+  if (!user.geminiApiKey) {
+    return { text: null, error: "אין מפתח Gemini בחשבון — עדכנו אותו." };
+  }
+
+  const [brief] = await db
+    .select({
+      whatHappened: rtmBriefs.whatHappened,
+      meaningForMortgageHolders: rtmBriefs.meaningForMortgageHolders,
+      closingQuestion: rtmBriefs.closingQuestion,
+    })
+    .from(rtmBriefs)
+    .where(and(eq(rtmBriefs.id, briefId), eq(rtmBriefs.userId, user.id)))
+    .limit(1);
+  if (!brief) return { text: null, error: "הבריף לא נמצא" };
+
+  try {
+    const text = await generateSocialPost(brief, user.geminiApiKey);
+    return { text, error: null };
+  } catch (err) {
+    const raw = err instanceof Error ? err.message : String(err);
+    const quotaHit = /429|quota|resource_exhausted/i.test(raw);
+    return {
+      text: null,
+      error: quotaHit
+        ? "המכסה היומית החינמית של ה-AI נוצלה — נסו שוב מאוחר יותר או מחר."
+        : "יצירת הפוסט נכשלה — אפשר לנסות שוב.",
+    };
+  }
 }
 
 export async function setRtmBriefStatusAction(

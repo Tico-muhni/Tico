@@ -1,7 +1,7 @@
 "use client";
 
-import { useTransition } from "react";
-import { setRtmBriefStatusAction } from "./actions";
+import { useState, useTransition } from "react";
+import { setRtmBriefStatusAction, generateSocialPostAction } from "./actions";
 
 export type RtmBriefView = {
   id: string;
@@ -31,11 +31,36 @@ const TEXT = "#1F2A37";
 
 export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
   const [isPending, startTransition] = useTransition();
+  const [isSocialPending, startSocial] = useTransition();
+  const [socialPost, setSocialPost] = useState<string | null>(null);
+  const [socialError, setSocialError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   function setStatus(status: "approved" | "dismissed") {
     startTransition(() => {
       setRtmBriefStatusAction(brief.id, status);
     });
+  }
+
+  function makeSocialPost() {
+    setSocialError(null);
+    setCopied(false);
+    startSocial(async () => {
+      const result = await generateSocialPostAction(brief.id);
+      if (result.error) setSocialError(result.error);
+      else setSocialPost(result.text);
+    });
+  }
+
+  async function copyPost() {
+    if (!socialPost) return;
+    try {
+      await navigator.clipboard.writeText(socialPost);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setSocialError("ההעתקה נכשלה — סמנו והעתיקו ידנית.");
+    }
   }
 
   return (
@@ -123,6 +148,61 @@ export default function RtmBriefCard({ brief }: { brief: RtmBriefView }) {
           <p className="text-sm font-semibold leading-relaxed" style={{ color: NAVY }}>
             {brief.closingQuestion}
           </p>
+        </div>
+
+        <div
+          className="rounded-xl border p-4"
+          style={{ borderColor: "#CDE3F0", backgroundColor: "#F3F9FD" }}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-xs font-extrabold" style={{ color: "#1F6FA8" }}>
+              גרסה לוואטסאפ / פייסבוק 📲
+            </h3>
+            <div className="flex items-center gap-2">
+              {socialPost && (
+                <button
+                  type="button"
+                  onClick={copyPost}
+                  className="rounded-full px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+                  style={{ backgroundColor: copied ? GREEN : "#1F6FA8" }}
+                >
+                  {copied ? "הועתק ✓" : "העתק"}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={makeSocialPost}
+                disabled={isSocialPending}
+                className="rounded-full border px-3 py-1.5 text-xs font-bold hover:bg-black/5 disabled:opacity-60"
+                style={{ borderColor: "#1F6FA8", color: "#1F6FA8" }}
+              >
+                {isSocialPending
+                  ? "כותב..."
+                  : socialPost
+                    ? "צור מחדש"
+                    : "צור טקסט לפרסום"}
+              </button>
+            </div>
+          </div>
+          {socialPost && (
+            <textarea
+              readOnly
+              value={socialPost}
+              dir="rtl"
+              rows={7}
+              className="mt-2 w-full resize-none rounded-lg border bg-white p-3 text-sm leading-relaxed outline-none"
+              style={{ borderColor: "#CDE3F0", color: TEXT }}
+              onFocus={(e) => e.currentTarget.select()}
+            />
+          )}
+          {socialError && (
+            <p className="mt-2 text-xs font-medium text-red-600">{socialError}</p>
+          )}
+          {!socialPost && !socialError && !isSocialPending && (
+            <p className="mt-1 text-xs" style={{ color: "#5B7385" }}>
+              טקסט כתוב מוכן להדבקה בסטטוס וואטסאפ או בפוסט בפייסבוק.
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-2 pt-1">

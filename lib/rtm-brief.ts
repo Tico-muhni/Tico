@@ -171,9 +171,22 @@ ${instructions}`;
     },
   });
 
-  // The free tier occasionally returns 429 (rate limit) or 503 (model
-  // overloaded / high demand). Those are transient, so retry a couple of
-  // times with a short backoff before giving up.
+  const text = await callGemini(apiKey, model, requestBody);
+  return extractJson(text);
+}
+
+/**
+ * Low-level Gemini call with retry on transient errors (429 / 5xx). Returns the
+ * raw text of the first candidate. Shared by the brief and social-post
+ * generators. The free tier occasionally returns 429 (rate limit) or 503
+ * (overloaded); those are transient, so retry a couple of times with a short
+ * backoff before giving up.
+ */
+async function callGemini(
+  apiKey: string,
+  model: string,
+  requestBody: string
+): Promise<string> {
   const TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
   const MAX_ATTEMPTS = 3;
   let lastError = "";
@@ -194,9 +207,9 @@ ${instructions}`;
       const text: string | undefined =
         data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!text) {
-        throw new Error("Gemini did not return a structured RTM brief.");
+        throw new Error("Gemini did not return any content.");
       }
-      return extractJson(text);
+      return text;
     }
 
     const body = await res.text();
@@ -210,4 +223,56 @@ ${instructions}`;
   }
 
   throw new Error(lastError);
+}
+
+const SOCIAL_POST_INSTRUCTIONS = `
+הפוך את הבריף הבא לפוסט כתוב מוכן לפרסום בסטטוס וואטסאפ או בפייסבוק - לא
+תסריט מדובר, אלא טקסט שקוראים. בעברית, בגוף שני, בטון חם ואישי.
+
+מבנה:
+- שורת פתיחה חזקה שעוצרת את הגלילה (על בסיס ההוק).
+- 2-4 שורות קצרות של ערך, עם רווח בין שורות וקצת אימוג'ים (במידה, לא הצפה).
+- שורת סיום עם קריאה לפעולה ברורה - להשאיר הודעה או לפנות לבדיקה אישית.
+
+קצר וקולח (מתאים לסטטוס וואטסאפ). בלי להבטיח ריבית/אישור/תוצאה/חיסכון
+מובטח. החזר אך ורק את טקסט הפוסט, בלי הסברים ובלי מרכאות עוטפות.
+`.trim();
+
+/**
+ * Adapt an already-generated video brief into a ready-to-paste written post for
+ * a WhatsApp status or Facebook - the advisor's warm channels. Generated on
+ * demand (not stored), so no schema change.
+ */
+export async function generateSocialPost(
+  brief: GeneratedRtmBrief,
+  apiKeyOverride?: string | null
+): Promise<string> {
+  const apiKey = apiKeyOverride || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "אין מפתח Gemini. הוסיפו מפתח בהרשמה (חינמי, בלי כרטיס אשראי)."
+    );
+  }
+
+  const userPrompt = `הבריף לסרטון:
+הוק: ${brief.whatHappened}
+תסריט: ${brief.meaningForMortgageHolders}
+קריאה לפעולה: ${brief.closingQuestion}
+
+${SOCIAL_POST_INSTRUCTIONS}`;
+
+  const requestBody = JSON.stringify({
+    systemInstruction: {
+      parts: [{ text: `${RTM_BUSINESS_CONTEXT}\n\n${RTM_COMPLIANCE_RULES}` }],
+    },
+    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+    generationConfig: {
+      responseMimeType: "text/plain",
+      temperature: 0.8,
+      maxOutputTokens: 3000,
+    },
+  });
+
+  const text = await callGemini(apiKey, getBriefModel(), requestBody);
+  return text.trim();
 }
