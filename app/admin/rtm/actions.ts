@@ -9,6 +9,7 @@ import {
   scanForCandidates,
   generateBriefForNewsItem,
 } from "@/lib/generate-rtm-briefs";
+import type { BriefStyle } from "@/lib/rtm-brief";
 
 type ActionResult = { error: string | null; success: string | null };
 
@@ -39,7 +40,8 @@ export async function scanNewsAction(): Promise<ActionResult> {
 }
 
 export async function generateBriefAction(
-  newsItemId: string
+  newsItemId: string,
+  style: BriefStyle = "article"
 ): Promise<ActionResult> {
   const user = await currentUser();
   if (!user) return { error: "יש להתחבר מחדש", success: null };
@@ -51,7 +53,7 @@ export async function generateBriefAction(
   }
 
   try {
-    await generateBriefForNewsItem(user.id, newsItemId, user.geminiApiKey);
+    await generateBriefForNewsItem(user.id, newsItemId, user.geminiApiKey, style);
     revalidatePath("/admin/rtm");
     return { error: null, success: null };
   } catch (err) {

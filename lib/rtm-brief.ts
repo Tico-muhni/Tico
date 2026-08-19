@@ -22,11 +22,15 @@ const RTM_COMPLIANCE_RULES = `
 - טון: מקצועי, אמין, חם - לא "מכירתי" אגרסיבי.
 `.trim();
 
-// NOTE: the JSON keys stay the same (whatHappened / meaningForMortgageHolders /
-// closingQuestion) so no DB migration is needed, but their ROLE is now a
-// video-native hook -> spoken script -> lead-driving CTA. Everything is written
-// in second person ("אתה").
-const OUTPUT_INSTRUCTIONS = `
+// The brief can be generated in two styles the advisor picks per article:
+//  - "article": react to the specific news item (classic RTM).
+//  - "inspired": use the item only as a spark for an evergreen educational
+//    video on the broader topic, aimed at identification + follows + leads.
+// Both share the same JSON keys (no DB migration) and the same video-native
+// shape: hook -> spoken script -> lead-driving CTA, all in second person.
+export type BriefStyle = "article" | "inspired";
+
+const ARTICLE_OUTPUT_INSTRUCTIONS = `
 החזר אך ורק אובייקט JSON תקין (בלי טקסט נוסף לפניו או אחריו) עם בדיוק
 שלושת המפתחות הבאים, כולם בעברית ובפנייה בגוף שני ("אתה", "יש לך"):
 
@@ -47,6 +51,36 @@ const OUTPUT_INSTRUCTIONS = `
   שהצופה יכול לעשות עכשיו, בסגנון: "יש לך מסלול פריים במשכנתה? שלח לי
   דוח יתרות ונבדוק ביחד איך אפשר לחסוך". התאם את הפעולה לנושא הידיעה.
   בלי להבטיח חיסכון/תוצאה מובטחת.
+`.trim();
+
+const INSPIRED_OUTPUT_INSTRUCTIONS = `
+אל תסקר את הכתבה ואל תגיב לאירוע חדשותי. השתמש בכתבה רק כניצוץ להשראה:
+זהה את הנושא הרחב והירוק-עד שהיא נוגעת בו (למשל מסלול פריים, תמהיל
+משכנתא, מחירי דירות, ההחזר החודשי, מיחזור, ההון העצמי), ובנה סביבו
+סרטון חינוכי כללי שאפשר להעלות מתי שלא יהיה - בלי להזכיר את הכתבה,
+תאריך, נתון עדכני או אירוע חדשותי ספציפי.
+
+המטרה: לגרום לצופה הנכון להזדהות ("זה בדיוק אני / המצב שלי"), לתת לו
+ערך אמיתי שממצב אותך כמומחה שאפשר לסמוך עליו, ומתוך זה לגרום לו לעקוב
+או לפנות - כדי לייצר טראפיק ולידים לעסק.
+
+החזר אך ורק אובייקט JSON תקין (בלי טקסט נוסף) עם בדיוק שלושת המפתחות
+הבאים, כולם בעברית ובפנייה בגוף שני ("אתה", "יש לך"):
+
+- "whatHappened": הוק פתיחה - משפט אחד קצר וחד (3 השניות הראשונות)
+  שעוצר את הגלילה, ומדבר ישירות לפרסונה עם כאב או רצון מוכר (למשל
+  "אם אתה מרגיש שלעולם לא תצליח לקנות דירה - תישאר איתי 20 שניות").
+  מסקרן, לא סיכום חדשות.
+
+- "meaningForMortgageHolders": גוף התסריט המדובר - 4-6 משפטים בגוף שני,
+  טון חם וזורם. פתח בזיהוי הפרסונה/המצב, ותן תובנה או טיפ אחד
+  לא-מובן-מאליו שרוב האנשים לא יודעים וממצב אותך כמומחה. פרקטי
+  וקונקרטי, בלי להבטיח ריבית/אישור/תוצאה ובלי מספרים קונקרטיים כהבטחה.
+
+- "closingQuestion": קריאה לפעולה ברורה בגוף שני עם פעולה קונקרטית אחת -
+  לעקוב לעוד תוכן כזה, או פנייה אישית לבדיקה (ליד), בסגנון "יש לך
+  מסלול פריים? שלח לי דוח יתרות ונבדוק ביחד איך אפשר לחסוך". בלי
+  להבטיח חיסכון/תוצאה מובטחת.
 `.trim();
 
 export function getBriefModel() {
@@ -90,7 +124,10 @@ export async function generateRtmBrief(
   },
   // Each advisor supplies their own Gemini key at registration, so briefs run
   // on their own quota. Falls back to a shared env key if provided.
-  apiKeyOverride?: string | null
+  apiKeyOverride?: string | null,
+  // "article" reacts to the news item; "inspired" uses it as a spark for an
+  // evergreen educational video. The advisor picks per article.
+  style: BriefStyle = "article"
 ): Promise<GeneratedRtmBrief> {
   const apiKey = apiKeyOverride || process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -99,14 +136,23 @@ export async function generateRtmBrief(
     );
   }
 
+  const instructions =
+    style === "inspired"
+      ? INSPIRED_OUTPUT_INSTRUCTIONS
+      : ARTICLE_OUTPUT_INSTRUCTIONS;
+  const task =
+    style === "inspired"
+      ? "בנה בריף לסרטון אינסטגרם בהשראת הידיעה הזו (לא עליה) - סרטון חינוכי כללי על הנושא הרחב."
+      : "הכן בריף קצר לסרטון אינסטגרם על בסיס הידיעה הזו.";
+
   const model = getBriefModel();
   const userPrompt = `ידיעה מ-${newsItem.source}:
 כותרת: ${newsItem.title}
 ${newsItem.summary ? `תקציר: ${newsItem.summary}` : ""}
 
-הכן בריף קצר לסרטון אינסטגרם על בסיס הידיעה הזו.
+${task}
 
-${OUTPUT_INSTRUCTIONS}`;
+${instructions}`;
 
   const requestBody = JSON.stringify({
     systemInstruction: {
