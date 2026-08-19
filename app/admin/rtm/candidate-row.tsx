@@ -18,16 +18,21 @@ export default function CandidateRow({ candidate }: { candidate: CandidateView }
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleting] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [errorIsQuota, setErrorIsQuota] = useState(false);
   const [pendingStyle, setPendingStyle] = useState<
     "article" | "inspired" | null
   >(null);
 
   function makeBrief(style: "article" | "inspired") {
     setError(null);
+    setErrorIsQuota(false);
     setPendingStyle(style);
     startTransition(async () => {
       const result = await generateBriefAction(candidate.id, style);
-      if (result.error) setError(result.error);
+      if (result.error) {
+        setError(result.error);
+        setErrorIsQuota(!!result.quota);
+      }
       setPendingStyle(null);
     });
   }
@@ -104,7 +109,23 @@ export default function CandidateRow({ candidate }: { candidate: CandidateView }
         >
           {isDeleting ? "מסיר..." : "הסר 🗑️"}
         </button>
-        {error && <span className="w-full text-xs font-medium text-red-600">{error}</span>}
+        {error &&
+          (errorIsQuota ? (
+            <p
+              className="w-full rounded-lg border p-2 text-xs font-medium"
+              style={{
+                backgroundColor: "#FEF6E7",
+                borderColor: "#F0C36D",
+                color: "#8A6D1B",
+              }}
+            >
+              🕛 {error}
+            </p>
+          ) : (
+            <span className="w-full text-xs font-medium text-red-600">
+              {error}
+            </span>
+          ))}
       </div>
     </article>
   );
