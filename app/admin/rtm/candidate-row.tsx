@@ -18,12 +18,17 @@ export default function CandidateRow({ candidate }: { candidate: CandidateView }
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleting] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [pendingStyle, setPendingStyle] = useState<
+    "article" | "inspired" | null
+  >(null);
 
-  function makeBrief() {
+  function makeBrief(style: "article" | "inspired") {
     setError(null);
+    setPendingStyle(style);
     startTransition(async () => {
-      const result = await generateBriefAction(candidate.id);
+      const result = await generateBriefAction(candidate.id, style);
       if (result.error) setError(result.error);
+      setPendingStyle(null);
     });
   }
 
@@ -68,15 +73,26 @@ export default function CandidateRow({ candidate }: { candidate: CandidateView }
         {candidate.title}
       </a>
 
-      <div className="mt-3 flex items-center gap-3">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
-          onClick={makeBrief}
+          onClick={() => makeBrief("article")}
           disabled={isPending || isDeleting}
           className="rounded-full px-4 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-60"
           style={{ backgroundColor: GREEN }}
+          title="בריף שמגיב לכתבה הזו (RTM)"
         >
-          {isPending ? "כותב בריף..." : "צור בריף ✨"}
+          {pendingStyle === "article" ? "כותב..." : "בריף מהכתבה 📰"}
+        </button>
+        <button
+          type="button"
+          onClick={() => makeBrief("inspired")}
+          disabled={isPending || isDeleting}
+          className="rounded-full border-2 px-4 py-2 text-sm font-bold hover:bg-black/5 disabled:opacity-60"
+          style={{ borderColor: GREEN, color: GREEN }}
+          title="סרטון חינוכי כללי בהשראת הנושא — לא על הכתבה עצמה"
+        >
+          {pendingStyle === "inspired" ? "כותב..." : "בריף בהשראה 💡"}
         </button>
         <button
           type="button"
@@ -88,7 +104,7 @@ export default function CandidateRow({ candidate }: { candidate: CandidateView }
         >
           {isDeleting ? "מסיר..." : "הסר 🗑️"}
         </button>
-        {error && <span className="text-xs font-medium text-red-600">{error}</span>}
+        {error && <span className="w-full text-xs font-medium text-red-600">{error}</span>}
       </div>
     </article>
   );

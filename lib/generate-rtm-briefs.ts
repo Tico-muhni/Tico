@@ -8,7 +8,11 @@ import {
   isIsraeliSource,
 } from "@/lib/rtm-news-sources";
 import { fetchRssItems } from "@/lib/rtm-rss";
-import { generateRtmBrief, getBriefModel } from "@/lib/rtm-brief";
+import {
+  generateRtmBrief,
+  getBriefModel,
+  type BriefStyle,
+} from "@/lib/rtm-brief";
 
 // How many candidate articles to keep per scan for the user to pick from.
 // Scanning is free (no AI), so this can be generous.
@@ -142,7 +146,8 @@ export async function scanForCandidates(userId: string, maxCandidates = MAX_CAND
 export async function generateBriefForNewsItem(
   userId: string,
   newsItemId: string,
-  apiKey?: string | null
+  apiKey?: string | null,
+  style: BriefStyle = "article"
 ) {
   const [item] = await db
     .select()
@@ -164,7 +169,8 @@ export async function generateBriefForNewsItem(
       title: item.title,
       summary: item.summary,
     },
-    apiKey
+    apiKey,
+    style
   );
 
   await db.insert(rtmBriefs).values({
