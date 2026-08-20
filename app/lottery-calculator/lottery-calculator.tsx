@@ -17,13 +17,12 @@ const DEFAULT_SIZES: ApartmentSize[] = [
 ];
 
 // הנחות קבועות של המחשבון - לא משתנות בין הגרלות, ולכן לא ניתנות לעריכה.
-// גודל המרפסת והמחסן כן משתנים בין הגרלות ומוזנים על ידי המשתמש - רק
-// אופן החישוב שלהם (המכפיל ממחיר המ״ר) קבוע.
+// גודל המרפסת/המחסן ומספר החניות כן משתנים בין הגרלות ומוזנים על ידי
+// המשתמש - רק אופן החישוב שלהם (המכפיל ממחיר המ״ר, מחיר חניה) קבוע.
 const VAT_PERCENT = 18;
 const BALCONY_FACTOR = 0.5;
 const STORAGE_FACTOR = 0.25;
-const PARKING_PRICE = 70000;
-const PARKING_COUNT = 1;
+const PARKING_PRICE = 70000; // ₪ לחניה, כולל מע״מ - נוסף ישירות למחיר הכולל מע״מ
 
 // כללי המימון של מחיר למשתכן (הוראת ניהול בנקאי תקין 329, סעיף 4א):
 // אם שווי השוק (המחיר לפני הנחה) עולה על 2.1 מיליון ₪, שווי הנכס לצורך
@@ -186,10 +185,11 @@ export default function LotteryCalculator() {
   const [referencePrice, setReferencePrice] = useState<number>(0);
   const [balconySqm, setBalconySqm] = useState<number>(12);
   const [storageSqm, setStorageSqm] = useState<number>(6);
+  const [parkingCount, setParkingCount] = useState<number>(1);
   const [grant, setGrant] = useState<number>(0);
 
   const results = useMemo(() => {
-    const parkingCost = PARKING_PRICE * PARKING_COUNT;
+    const parkingCost = PARKING_PRICE * parkingCount;
     const balconySqmEquivalent = balconySqm * BALCONY_FACTOR;
     const storageSqmEquivalent = storageSqm * STORAGE_FACTOR;
 
@@ -244,6 +244,7 @@ export default function LotteryCalculator() {
     referencePrice,
     balconySqm,
     storageSqm,
+    parkingCount,
     grant,
   ]);
 
@@ -332,6 +333,9 @@ export default function LotteryCalculator() {
           </Field>
           <Field label="גודל מחסן" suffix="מ״ר">
             <NumberInput value={storageSqm} onChange={setStorageSqm} min={0} />
+          </Field>
+          <Field label="מספר חניות" suffix={`× ${currency.format(PARKING_PRICE)} ₪`}>
+            <NumberInput value={parkingCount} onChange={setParkingCount} min={0} />
           </Field>
         </div>
       </section>
