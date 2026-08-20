@@ -187,13 +187,20 @@ export default function LotteryCalculator() {
   const [storageSqm, setStorageSqm] = useState<number>(6);
   const [parkingCount, setParkingCount] = useState<number>(1);
   const [grant, setGrant] = useState<number>(0);
+  // מ״ר עיקרי לכל גודל - ברירת מחדל סטנדרטית, ניתנת לעדכון כשידוע המ״ר
+  // המדויק של הדירה הספציפית (הגדלים הקבועים הם ממוצע בלבד).
+  const [sizes, setSizes] = useState<ApartmentSize[]>(DEFAULT_SIZES);
+
+  const updateMainSqm = (id: number, mainSqm: number) => {
+    setSizes((prev) => prev.map((s) => (s.id === id ? { ...s, mainSqm } : s)));
+  };
 
   const results = useMemo(() => {
     const parkingCost = PARKING_PRICE * parkingCount;
     const balconySqmEquivalent = balconySqm * BALCONY_FACTOR;
     const storageSqmEquivalent = storageSqm * STORAGE_FACTOR;
 
-    return DEFAULT_SIZES.map((size) => {
+    return sizes.map((size) => {
       const calcSqm = size.mainSqm + balconySqmEquivalent + storageSqmEquivalent;
 
       const preDiscountExVat = calcSqm * pricePerSqm;
@@ -238,6 +245,7 @@ export default function LotteryCalculator() {
       };
     });
   }, [
+    sizes,
     pricePerSqm,
     discountPercent,
     discountCap,
@@ -337,6 +345,26 @@ export default function LotteryCalculator() {
           <Field label="מספר חניות" suffix={`× ${currency.format(PARKING_PRICE)} ₪`}>
             <NumberInput value={parkingCount} onChange={setParkingCount} min={0} />
           </Field>
+        </div>
+        <div>
+          <p className="mb-2 text-sm font-medium text-foreground/80">
+            מ״ר עיקרי בפועל
+          </p>
+          <p className="mb-2 text-xs text-foreground/50">
+            הגדלים למטה הם ממוצע סטנדרטי - אם ידוע המ״ר המדויק של הדירה
+            הספציפית מתוך אתר ההגרלה, אפשר לעדכן אותו כאן.
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {sizes.map((size) => (
+              <Field key={size.id} label={size.label} suffix="מ״ר">
+                <NumberInput
+                  value={size.mainSqm}
+                  onChange={(value) => updateMainSqm(size.id, value)}
+                  min={0}
+                />
+              </Field>
+            ))}
+          </div>
         </div>
       </section>
 
