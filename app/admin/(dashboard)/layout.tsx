@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
 
 const NAV_ITEMS = [
+  { href: "/admin/tikia", label: "תיקיה" },
   { href: "/admin/drafts", label: "טיוטות לאישור" },
   { href: "/admin/subscribers", label: "רשימת תפוצה" },
   { href: "/admin/topics", label: "נושאים" },

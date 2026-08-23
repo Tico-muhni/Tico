@@ -7,6 +7,7 @@ import {
   boolean,
   pgEnum,
   unique,
+  AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 // Registered advisors. Each has their own login and their own Gemini API key,
@@ -268,4 +269,83 @@ export const rtmBriefs = pgTable("rtm_briefs", {
   generatedAt: timestamp("generated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+});
+
+// ── Tikia: Document intake + Smart NPV integration ──
+
+export const docSourceEnum = pgEnum("doc_source", [
+  "manual",
+  "smart_npv",
+  "whatsapp",
+]);
+
+export const docStatusEnum = pgEnum("doc_status", [
+  "received",
+  "analyzing",
+  "identified",
+  "pushed",
+  "push_failed",
+  "rejected",
+]);
+
+export const caseStatusEnum = pgEnum("case_status", [
+  "active",
+  "complete",
+  "archived",
+]);
+
+export const tikiaCases = pgTable(
+  "tikia_cases",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    clientName: text("client_name").notNull(),
+    clientPhone: text("client_phone"),
+    smartNpvClientId: text("smart_npv_client_id"),
+    caseType: text("case_type"),
+    requiredDocTypes: text("required_doc_types").array().notNull().default([]),
+    status: caseStatusEnum("status").notNull().default("active"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("tikia_cases_user_phone_unique").on(t.userId, t.clientPhone),
+  ]
+);
+
+export const tikiaDocuments = pgTable("tikia_documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id")
+    .notNull()
+    .references((): AnyPgColumn => tikiaCases.id, { onDelete: "cascade" }),
+  source: docSourceEnum("source").notNull().default("manual"),
+  status: docStatusEnum("status").notNull().default("received"),
+  docType: text("doc_type"),
+  docTypeLabel: text("doc_type_label"),
+  extractedData: text("extracted_data"),
+  fileUrl: text("file_url"),
+  smartNpvDocId: text("smart_npv_doc_id"),
+  errorMessage: text("error_message"),
+  receivedAt: timestamp("received_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const tikiaScanRuns = pgTable("tikia_scan_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runAt: timestamp("run_at", { withTimezone: true }).notNull().defaultNow(),
+  casesScanned: integer("cases_scanned").notNull().default(0),
+  newDocsDetected: integer("new_docs_detected").notNull().default(0),
+  status: rtmRunStatusEnum("status").notNull().default("running"),
+  error: text("error"),
 });
