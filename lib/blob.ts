@@ -32,3 +32,19 @@ export async function uploadGeneratedImage(
   });
   return blob.url;
 }
+
+export async function uploadTikiaDocument(
+  buffer: Buffer,
+  filename: string,
+  contentType = "application/octet-stream"
+): Promise<string> {
+  const token = requireBlobToken();
+  const ext = filename.split(".").pop() || "bin";
+  const pathname = `tikia-documents/${crypto.randomUUID()}.${ext}`;
+  const blob = await put(pathname, buffer, {
+    access: "public",
+    token,
+    contentType,
+  });
+  return blob.url;
+}
