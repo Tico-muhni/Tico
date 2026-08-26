@@ -1,0 +1,239 @@
+<!doctype html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Heebo', 'Segoe UI', Arial, sans-serif; background: #F1FAEE; color: #333; direction: rtl; }
+    a { color: #2E8B57; } a:hover { color: #245F3F; }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; min-height: 900px; background: #F1FAEE; display: flex; flex-direction: column;">
+
+  <!-- Header -->
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; background: #fff; border-bottom: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 24px; font-weight: 700; color: #1D3557;">TICO</span>
+      <span style="font-size: 24px; font-weight: 700; color: #2E8B57;">FINANCE</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 32px; font-size: 14px; font-weight: 500; color: #5B6B62;">
+      <span>דשבורד</span>
+      <span>הפצה</span>
+      <span style="color: #2E8B57; font-weight: 600; border-bottom: 2px solid #2E8B57; padding-bottom: 4px;">צ׳אטבוט</span>
+      <span>הגדרות</span>
+    </div>
+    <div style="width: 36px; height: 36px; border-radius: 9999px; background: #2E8B57; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600;">ט</div>
+  </div>
+
+  <div style="padding: 32px; display: flex; flex-direction: column; gap: 24px; flex: 1;">
+
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1D3557;">בוט אינסטגרם</h1>
+        <p style="margin: 4px 0 0; font-size: 14px; color: #5B6B62;">תגובות אוטומטיות, הודעות ישירות ואוטומציה חכמה</p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: #EAF6EF; border-radius: 9999px;">
+          <div style="width: 8px; height: 8px; border-radius: 9999px; background: #2E8B57;"></div>
+          <span style="font-size: 13px; font-weight: 600; color: #2E8B57;">בוט פעיל</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1;">
+
+      <!-- Left Column: Triggers + Auto-Reply Templates -->
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+
+        <!-- Trigger Keywords -->
+        <div style="background: #fff; border-radius: 16px; padding: 24px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1D3557;">מילות טריגר</h3>
+            <button style="border: none; background: #EAF6EF; color: #2E8B57; padding: 6px 14px; border-radius: 9999px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">+ הוסף מילה</button>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #2E8B57; border-radius: 9999px; color: #fff; font-size: 13px; font-weight: 500;">
+              משכנתא
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #2E8B57; border-radius: 9999px; color: #fff; font-size: 13px; font-weight: 500;">
+              מחיר
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #2E8B57; border-radius: 9999px; color: #fff; font-size: 13px; font-weight: 500;">
+              פרטים
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #2E8B57; border-radius: 9999px; color: #fff; font-size: 13px; font-weight: 500;">
+              ייעוץ
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #1D3557; border-radius: 9999px; color: #fff; font-size: 13px; font-weight: 500;">
+              ריבית
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #1D3557; border-radius: 9999px; color: #fff; font-size: 13px; font-weight: 500;">
+              מימון
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Automation Flows -->
+        <div style="background: #fff; border-radius: 16px; padding: 24px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+          <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #1D3557;">אוטומציות פעילות</h3>
+
+          <!-- Flow 1: Comment to DM -->
+          <div style="border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #2E8B57 0%, #245F3F 100%); display: flex; align-items: center; justify-content: center;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                </div>
+                <span style="font-size: 14px; font-weight: 600; color: #1D3557;">תגובה ← הודעה ישירה</span>
+              </div>
+              <div style="width: 40px; height: 22px; border-radius: 9999px; background: #2E8B57; position: relative; cursor: pointer;">
+                <div style="width: 18px; height: 18px; border-radius: 9999px; background: #fff; position: absolute; top: 2px; left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.15);"></div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #5B6B62; line-height: 1.5;">כשמישהו מגיב עם מילת טריגר, שלח הודעה ישירה אוטומטית עם פרטים נוספים</div>
+            <div style="display: flex; gap: 12px; margin-top: 10px; font-size: 11px; color: #8A968F;">
+              <span>הופעל 423 פעמים</span>
+              <span>שיעור תגובה: 67%</span>
+            </div>
+          </div>
+
+          <!-- Flow 2: Story Reply -->
+          <div style="border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #F5AC32 0%, #D4AF37 100%); display: flex; align-items: center; justify-content: center;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                </div>
+                <span style="font-size: 14px; font-weight: 600; color: #1D3557;">תגובות לסטורי</span>
+              </div>
+              <div style="width: 40px; height: 22px; border-radius: 9999px; background: #2E8B57; position: relative; cursor: pointer;">
+                <div style="width: 18px; height: 18px; border-radius: 9999px; background: #fff; position: absolute; top: 2px; left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.15);"></div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #5B6B62; line-height: 1.5;">תגובה אוטומטית לכל מי שמגיב על הסטורי עם הודעת תודה ולינק</div>
+            <div style="display: flex; gap: 12px; margin-top: 10px; font-size: 11px; color: #8A968F;">
+              <span>הופעל 198 פעמים</span>
+              <span>שיעור תגובה: 82%</span>
+            </div>
+          </div>
+
+          <!-- Flow 3: AI Smart Reply -->
+          <div style="border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #1D3557 0%, #0F243E 100%); display: flex; align-items: center; justify-content: center;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                </div>
+                <span style="font-size: 14px; font-weight: 600; color: #1D3557;">תגובות AI חכמות</span>
+              </div>
+              <div style="width: 40px; height: 22px; border-radius: 9999px; background: #2E8B57; position: relative; cursor: pointer;">
+                <div style="width: 18px; height: 18px; border-radius: 9999px; background: #fff; position: absolute; top: 2px; left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.15);"></div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #5B6B62; line-height: 1.5;">AI עונה לשאלות מורכבות בהודעות ישירות על סמך מאגר הידע שלך</div>
+            <div style="display: flex; gap: 12px; margin-top: 10px; font-size: 11px; color: #8A968F;">
+              <span>הופעל 222 פעמים</span>
+              <span>שיעור שביעות רצון: 91%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Conversation Inbox -->
+      <div style="background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden;">
+        <div style="padding: 20px 24px; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between;">
+          <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1D3557;">תיבת שיחות</h3>
+          <span style="padding: 4px 10px; border-radius: 9999px; background: #E63946; color: #fff; font-size: 11px; font-weight: 600;">5 חדשות</span>
+        </div>
+
+        <!-- Conversation list -->
+        <div style="flex: 1; overflow: hidden;">
+
+          <!-- Active conversation -->
+          <div style="padding: 16px 24px; background: #F4FAF6; border-right: 3px solid #2E8B57; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; border-radius: 9999px; background: #1D3557; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; flex-shrink: 0;">ד.כ</div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-size: 14px; font-weight: 600; color: #1D3557;">דנה כהן</span>
+                  <span style="font-size: 11px; color: #8A968F;">עכשיו</span>
+                </div>
+                <div style="font-size: 12px; color: #5B6B62; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">היי, ראיתי את הפוסט על משכנתא ראשונה...</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding: 16px 24px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; border-radius: 9999px; background: #2E8B57; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; flex-shrink: 0;">י.ל</div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-size: 14px; font-weight: 600; color: #1D3557;">יוסי לוי</span>
+                  <span style="font-size: 11px; color: #8A968F;">לפני 5 דק׳</span>
+                </div>
+                <div style="font-size: 12px; color: #5B6B62; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">מחיר ייעוץ? מעוניין במשכנתא לדירה שנייה</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding: 16px 24px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; border-radius: 9999px; background: #F5AC32; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; flex-shrink: 0;">מ.א</div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-size: 14px; font-weight: 600; color: #1D3557;">מיכל אברהם</span>
+                  <span style="font-size: 11px; color: #8A968F;">לפני 12 דק׳</span>
+                </div>
+                <div style="font-size: 12px; color: #5B6B62; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">תודה! קבעתי פגישה דרך הלינק</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding: 16px 24px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; border-radius: 9999px; background: #E63946; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; flex-shrink: 0;">א.ש</div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-size: 14px; font-weight: 600; color: #1D3557;">אבי שמעון</span>
+                  <span style="font-size: 11px; color: #8A968F;">לפני 30 דק׳</span>
+                </div>
+                <div style="font-size: 12px; color: #5B6B62; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">איך הריבית משפיעה על ההחזר החודשי?</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding: 16px 24px; cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; border-radius: 9999px; background: #5B6B62; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; flex-shrink: 0;">ר.מ</div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-size: 14px; font-weight: 600; color: #1D3557;">רוני מזרחי</span>
+                  <span style="font-size: 11px; color: #8A968F;">לפני שעה</span>
+                </div>
+                <div style="font-size: 12px; color: #5B6B62; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">בוט ענה: שלחתי לך את כל הפרטים בהודעה</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>
