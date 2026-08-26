@@ -6,7 +6,8 @@ import {
   chatbotMessages,
   chatbotSettings,
 } from "@/drizzle/schema";
-import { getClient, getContentModel, COMPLIANCE_RULES } from "./anthropic";
+import { COMPLIANCE_RULES } from "./anthropic";
+import { getBriefModel } from "./rtm-brief";
 
 const GRAPH_VERSION = "v21.0";
 const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
@@ -165,30 +166,58 @@ const SMART_REPLY_SYSTEM = `
 ${COMPLIANCE_RULES}
 `.trim();
 
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+
 export async function generateSmartReply(
   incomingMessage: string,
   conversationHistory: Array<{ direction: string; text: string }>
 ): Promise<string> {
-  const model = getContentModel();
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return "";
+
+  const model = getBriefModel();
   const historyText = conversationHistory
     .slice(-6)
     .map((m) => `${m.direction === "inbound" ? "לקוח" : "יועץ"}: ${m.text}`)
     .join("\n");
 
-  const message = await getClient().messages.create({
-    model,
-    max_tokens: 300,
-    system: SMART_REPLY_SYSTEM,
-    messages: [
+  const requestBody = JSON.stringify({
+    systemInstruction: {
+      parts: [{ text: SMART_REPLY_SYSTEM }],
+    },
+    contents: [
       {
         role: "user",
-        content: `היסטוריית השיחה:\n${historyText}\n\nהודעה חדשה מהלקוח: "${incomingMessage}"\n\nכתוב תשובה קצרה בשם היועץ.`,
+        parts: [
+          {
+            text: `היסטוריית השיחה:\n${historyText}\n\nהודעה חדשה מהלקוח: "${incomingMessage}"\n\nכתוב תשובה קצרה בשם היועץ. החזר רק את הטקסט של התשובה, בלי הסברים.`,
+          },
+        ],
       },
     ],
+    generationConfig: {
+      responseMimeType: "text/plain",
+      temperature: 0.7,
+      maxOutputTokens: 300,
+    },
   });
 
-  const textBlock = message.content.find((b) => b.type === "text");
-  return textBlock && "text" in textBlock ? textBlock.text : "";
+  const res = await fetch(
+    `${GEMINI_BASE}/${model}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: requestBody,
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) return "";
+
+  const data = await res.json();
+  const text: string | undefined =
+    data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  return text?.trim() ?? "";
 }
 
 export async function handleIncomingMessage(opts: {
