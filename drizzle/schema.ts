@@ -341,6 +341,92 @@ export const tikiaDocuments = pgTable("tikia_documents", {
     .defaultNow(),
 });
 
+// ── Instagram Chatbot ──
+
+export const chatbotTriggerActionEnum = pgEnum("chatbot_trigger_action", [
+  "send_dm",
+  "reply_comment",
+  "both",
+]);
+
+export const chatbotTriggers = pgTable("chatbot_triggers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  keyword: text("keyword").notNull().unique(),
+  replyTemplate: text("reply_template").notNull(),
+  action: chatbotTriggerActionEnum("action").notNull().default("send_dm"),
+  active: boolean("active").notNull().default(true),
+  timesTriggered: integer("times_triggered").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const chatbotConversationStatusEnum = pgEnum(
+  "chatbot_conversation_status",
+  ["active", "resolved", "escalated"]
+);
+
+export const chatbotConversations = pgTable("chatbot_conversations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  igUserId: text("ig_user_id").notNull(),
+  igUsername: text("ig_username"),
+  status: chatbotConversationStatusEnum("status")
+    .notNull()
+    .default("active"),
+  lastMessageAt: timestamp("last_message_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const chatbotMessageDirectionEnum = pgEnum(
+  "chatbot_message_direction",
+  ["inbound", "outbound"]
+);
+
+export const chatbotMessageSourceEnum = pgEnum("chatbot_message_source", [
+  "comment",
+  "dm",
+  "story_reply",
+]);
+
+export const chatbotMessages = pgTable("chatbot_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id")
+    .notNull()
+    .references(() => chatbotConversations.id, { onDelete: "cascade" }),
+  direction: chatbotMessageDirectionEnum("direction").notNull(),
+  source: chatbotMessageSourceEnum("source").notNull().default("dm"),
+  text: text("text").notNull(),
+  triggerId: uuid("trigger_id").references(() => chatbotTriggers.id, {
+    onDelete: "set null",
+  }),
+  aiGenerated: boolean("ai_generated").notNull().default(false),
+  igMessageId: text("ig_message_id"),
+  sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const chatbotSettings = pgTable("chatbot_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  aiSmartRepliesEnabled: boolean("ai_smart_replies_enabled")
+    .notNull()
+    .default(true),
+  storyAutoReplyEnabled: boolean("story_auto_reply_enabled")
+    .notNull()
+    .default(true),
+  storyAutoReplyTemplate: text("story_auto_reply_template")
+    .notNull()
+    .default("תודה על התגובה! 🙏 אשמח לעזור - שלח/י לי הודעה ואחזור אליך בהקדם"),
+  commentToDmEnabled: boolean("comment_to_dm_enabled")
+    .notNull()
+    .default(true),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const tikiaScanRuns = pgTable("tikia_scan_runs", {
   id: uuid("id").primaryKey().defaultRandom(),
   runAt: timestamp("run_at", { withTimezone: true }).notNull().defaultNow(),

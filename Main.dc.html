@@ -1,0 +1,226 @@
+<!doctype html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Heebo', 'Segoe UI', Arial, sans-serif; background: #F1FAEE; color: #333; direction: rtl; }
+    a { color: #2E8B57; } a:hover { color: #245F3F; }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; min-height: 900px; background: #F1FAEE; display: flex; flex-direction: column;">
+
+  <!-- Top Nav -->
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; background: #fff; border-bottom: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 24px; font-weight: 700; color: #1D3557;">TICO</span>
+      <span style="font-size: 24px; font-weight: 700; color: #2E8B57;">FINANCE</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 32px; font-size: 14px; font-weight: 500; color: #5B6B62;">
+      <span style="color: #2E8B57; font-weight: 600; border-bottom: 2px solid #2E8B57; padding-bottom: 4px;">דשבורד</span>
+      <span>הפצה</span>
+      <span>צ׳אטבוט</span>
+      <span>הגדרות</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 36px; height: 36px; border-radius: 9999px; background: #2E8B57; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600;">ט</div>
+    </div>
+  </div>
+
+  <div style="padding: 32px; display: flex; flex-direction: column; gap: 24px; flex: 1;">
+
+    <!-- Page Title -->
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1D3557;">מרכז השיווק</h1>
+        <p style="margin: 4px 0 0; font-size: 14px; color: #5B6B62;">סקירה כללית של מערכת השיווק האוטומטית</p>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <button style="border: none; background: #2E8B57; color: #fff; padding: 10px 24px; border-radius: 9999px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">+ פוסט חדש</button>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;">
+
+      <div style="background: #fff; border-radius: 16px; padding: 24px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <span style="font-size: 13px; color: #5B6B62; font-weight: 500;">פוסטים שפורסמו</span>
+          <div style="width: 36px; height: 36px; border-radius: 12px; background: #EAF6EF; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+        </div>
+        <div style="font-size: 32px; font-weight: 700; color: #1D3557;">127</div>
+        <div style="font-size: 12px; color: #2E8B57; margin-top: 4px; font-weight: 500;">+12 השבוע</div>
+      </div>
+
+      <div style="background: #fff; border-radius: 16px; padding: 24px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <span style="font-size: 13px; color: #5B6B62; font-weight: 500;">אחוז מעורבות</span>
+          <div style="width: 36px; height: 36px; border-radius: 12px; background: #EAF6EF; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+        </div>
+        <div style="font-size: 32px; font-weight: 700; color: #1D3557;">4.8%</div>
+        <div style="font-size: 12px; color: #2E8B57; margin-top: 4px; font-weight: 500;">+0.6% מהשבוע שעבר</div>
+      </div>
+
+      <div style="background: #fff; border-radius: 16px; padding: 24px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <span style="font-size: 13px; color: #5B6B62; font-weight: 500;">תגובות אוטומטיות</span>
+          <div style="width: 36px; height: 36px; border-radius: 12px; background: #FEF6E7; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5AC32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+        </div>
+        <div style="font-size: 32px; font-weight: 700; color: #1D3557;">843</div>
+        <div style="font-size: 12px; color: #F5AC32; margin-top: 4px; font-weight: 500;">+156 החודש</div>
+      </div>
+
+      <div style="background: #fff; border-radius: 16px; padding: 24px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <span style="font-size: 13px; color: #5B6B62; font-weight: 500;">שיחות פעילות</span>
+          <div style="width: 36px; height: 36px; border-radius: 12px; background: rgba(29,53,87,0.08); display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1D3557" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+        </div>
+        <div style="font-size: 32px; font-weight: 700; color: #1D3557;">23</div>
+        <div style="font-size: 12px; color: #1D3557; margin-top: 4px; font-weight: 500; opacity: 0.6;">5 ממתינות למענה</div>
+      </div>
+    </div>
+
+    <!-- Flow Diagram + Activity Feed -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; flex: 1;">
+
+      <!-- Flow Diagram -->
+      <div style="background: #fff; border-radius: 16px; padding: 24px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <h3 style="margin: 0 0 24px; font-size: 16px; font-weight: 600; color: #1D3557;">תהליך השיווק האוטומטי</h3>
+
+        <div style="display: flex; align-items: center; justify-content: center; gap: 0; padding: 16px 0;">
+
+          <!-- Step 1 -->
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1;">
+            <div style="width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, #2E8B57 0%, #245F3F 100%); display: flex; align-items: center; justify-content: center;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </div>
+            <span style="font-size: 13px; font-weight: 600; color: #1D3557; text-align: center;">יצירת תוכן<br>AI</span>
+          </div>
+
+          <!-- Arrow -->
+          <div style="display: flex; align-items: center; margin-top: -20px;">
+            <svg width="40" height="20" viewBox="0 0 40 20"><path d="M40 10 L28 4 L28 16 Z" fill="#2E8B57"/><line x1="0" y1="10" x2="28" y2="10" stroke="#2E8B57" stroke-width="2"/></svg>
+          </div>
+
+          <!-- Step 2 -->
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1;">
+            <div style="width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, #F5AC32 0%, #D4AF37 100%); display: flex; align-items: center; justify-content: center;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <span style="font-size: 13px; font-weight: 600; color: #1D3557; text-align: center;">אישור<br>אנושי</span>
+          </div>
+
+          <!-- Arrow -->
+          <div style="display: flex; align-items: center; margin-top: -20px;">
+            <svg width="40" height="20" viewBox="0 0 40 20"><path d="M40 10 L28 4 L28 16 Z" fill="#2E8B57"/><line x1="0" y1="10" x2="28" y2="10" stroke="#2E8B57" stroke-width="2"/></svg>
+          </div>
+
+          <!-- Step 3 -->
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1;">
+            <div style="width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, #1D3557 0%, #0F243E 100%); display: flex; align-items: center; justify-content: center;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            </div>
+            <span style="font-size: 13px; font-weight: 600; color: #1D3557; text-align: center;">פרסום<br>רב-פלטפורמה</span>
+          </div>
+
+          <!-- Arrow -->
+          <div style="display: flex; align-items: center; margin-top: -20px;">
+            <svg width="40" height="20" viewBox="0 0 40 20"><path d="M40 10 L28 4 L28 16 Z" fill="#2E8B57"/><line x1="0" y1="10" x2="28" y2="10" stroke="#2E8B57" stroke-width="2"/></svg>
+          </div>
+
+          <!-- Step 4 -->
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1;">
+            <div style="width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, #E63946 0%, #B4232A 100%); display: flex; align-items: center; justify-content: center;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <span style="font-size: 13px; font-weight: 600; color: #1D3557; text-align: center;">בוט תגובות<br>אוטומטי</span>
+          </div>
+        </div>
+
+        <!-- Platform badges -->
+        <div style="display: flex; justify-content: center; gap: 12px; margin-top: 24px;">
+          <div style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #EAF6EF; border-radius: 9999px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#2E8B57"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.5" fill="#fff"/></svg>
+            <span style="font-size: 12px; font-weight: 600; color: #2E8B57;">Instagram</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: rgba(29,53,87,0.08); border-radius: 9999px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#1D3557"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+            <span style="font-size: 12px; font-weight: 600; color: #1D3557;">Facebook</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #FEF6E7; border-radius: 9999px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F5AC32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <span style="font-size: 12px; font-weight: 600; color: #F5AC32;">Email</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Feed -->
+      <div style="background: #fff; border-radius: 16px; padding: 24px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; flex-direction: column;">
+        <h3 style="margin: 0 0 20px; font-size: 16px; font-weight: 600; color: #1D3557;">פעילות אחרונה</h3>
+
+        <div style="display: flex; flex-direction: column; gap: 0; flex: 1;">
+
+          <div style="display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
+            <div style="width: 8px; height: 8px; border-radius: 9999px; background: #2E8B57; margin-top: 6px; flex-shrink: 0;"></div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; color: #333; font-weight: 500;">פוסט "5 טיפים למשכנתא" פורסם באינסטגרם</div>
+              <div style="font-size: 12px; color: #8A968F; margin-top: 2px;">לפני 12 דקות</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
+            <div style="width: 8px; height: 8px; border-radius: 9999px; background: #F5AC32; margin-top: 6px; flex-shrink: 0;"></div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; color: #333; font-weight: 500;">בוט ענה ל-3 תגובות חדשות</div>
+              <div style="font-size: 12px; color: #8A968F; margin-top: 2px;">לפני 25 דקות</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
+            <div style="width: 8px; height: 8px; border-radius: 9999px; background: #1D3557; margin-top: 6px; flex-shrink: 0;"></div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; color: #333; font-weight: 500;">טיוטה חדשה ממתינה לאישור</div>
+              <div style="font-size: 12px; color: #8A968F; margin-top: 2px;">לפני שעה</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
+            <div style="width: 8px; height: 8px; border-radius: 9999px; background: #2E8B57; margin-top: 6px; flex-shrink: 0;"></div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; color: #333; font-weight: 500;">אימייל שיווקי נשלח ל-248 מנויים</div>
+              <div style="font-size: 12px; color: #8A968F; margin-top: 2px;">לפני 2 שעות</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; padding: 14px 0;">
+            <div style="width: 8px; height: 8px; border-radius: 9999px; background: #E63946; margin-top: 6px; flex-shrink: 0;"></div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; color: #333; font-weight: 500;">ליד חדש מהבוט: יוסי כ. (משכנתא ראשונה)</div>
+              <div style="font-size: 12px; color: #8A968F; margin-top: 2px;">לפני 3 שעות</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>
