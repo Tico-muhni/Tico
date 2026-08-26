@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { href: "/admin/tikia", label: "תיקיה" },
   { href: "/admin/drafts", label: "טיוטות לאישור" },
   { href: "/admin/import", label: "ייבוא פוסטים" },
+  { href: "/admin/chatbot", label: "צ'אטבוט" },
   { href: "/admin/subscribers", label: "רשימת תפוצה" },
   { href: "/admin/topics", label: "נושאים" },
   { href: "/admin/templates", label: "תבניות תמונה" },
