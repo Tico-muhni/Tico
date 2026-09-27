@@ -34,7 +34,7 @@ ticofinance.co.il/check?m=[שם]&utm_source=realtor&utm_campaign=[שם]
 
 לדוגמה: ticofinance.co.il/check?m=yossi&utm_source=realtor&utm_campaign=yossi
 (אותיות באנגלית קטנות, בלי רווחים. מתווך חדש = רק מחליפים את השם בשני המקומות. לא צריך לשנות כלום באתר או ב-GA.)
-איפה רואים ב-GA: דוחות ← רכישה ← רכישת תנועה ← לשנות את העמודה ל"קמפיין של הסשן".
+איפה רואים ב-GA: Reports → Acquisition → Traffic acquisition → בטבלה, בחץ ליד "Session primary channel group" לבחור "Session campaign". הנתונים מופיעים אחרי 24-48 שעות.
 מעקב (כרגע ידני):
 - GA: כמה נכנסו מהקישור של כל מתווך.
 - וואטסאפ מהדף: ההודעה מגיעה עם "(realtor-yossi)".
