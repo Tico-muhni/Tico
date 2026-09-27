@@ -14,3 +14,11 @@ No hold@3s / sends data (not available to the user).
 
 STOP: batches of designed posts on one day.
 DO MORE: selfie to-camera reels on identification themes (family, the banker, פראיירים).
+
+## Update: insights for "בכל משפחה יש מיש..." (55s reel)
+- 537 views = 197 Instagram + 340 Facebook (cross-posted). Only 130 unique viewers. Views in the content list include Facebook, so rankings are softer than they looked.
+- Skip rate 67.6% (Instagram flags it high) = only ~32% still there at 3s. HOOK PROBLEM.
+- Average watch 11s of 55s. Retention falls to ~half within the first seconds, then ~10% by the middle.
+- Comments 2.9% (high), 1 repost, 0 sends, 0 saves, 0 follows.
+- Sources: feed 43%, reels tab 31%, stories 17%, explore 4%.
+- Read: the topic works (the few who stay comment), the opening loses two thirds. Fix the first 2 seconds and cut length toward 25-35s before changing topics.
