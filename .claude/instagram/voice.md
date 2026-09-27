@@ -10,6 +10,7 @@ interview with the owner. Lines marked `??` are still open.
 - **Name:** צ'יקו זוויבל
 - **Business:** TICO FINANCE - MORTGAGE ARCHITECT / צ'יקו פייננס - אדריכל המשכנתאות
 - **Handle:** @ticozveibel
+- **Name field (fixed, do not suggest changing):** צ'יקו זוויבל | אדריכל המשכנתאות - חלק מהמיתוג. הביו הנוכחי כבר עבר אופטימיזציה בשיחות קודמות.
 - **What I do, in one sentence:** מומחה לתכנון ואסטרטגיות מימון, מתמחה במשפרי דיור ומשקיעי נדל"ן. הפוקוס עכשיו: מיחזורי משכנתאות.
 - **Who I am talking to (priority order):**
   1. בעלי משכנתאות שנלקחו ב-10 השנים האחרונות, שמרגישים שמשהו לא טוב או רוצים לבדוק אופציות. היעד: מיחזור משתלם. **זה הפוקוס כרגע.**
