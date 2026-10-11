@@ -186,4 +186,4 @@
 
 אם בסיס הנתונים נוצר בלי טבלאות התוכן, אפשר להדביק בעורך ה-SQL את `drizzle/manual/apply-content-tables.sql`. הוא בטוח להרצה חוזרת
 ומוסיף בלבד: `topics`, `draft_posts`, `draft_emails`, `subscribers`, `email_sends`, `generation_runs`, `image_templates`.
-העלאת תמונות (ייבוא פוסטים, תבניות) דורשת גם `BLOB_READ_WRITE_TOKEN` (חיבור חנות ה-Blob לפרויקט ב-Vercel).
+העלאת תמונות (ייבוא פוסטים, תבניות) דורשת חנות Blob מחוברת לפרויקט ב-Vercel: או `BLOB_READ_WRITE_TOKEN`, או `BLOB_STORE_ID` (חיבור OIDC, בלי טוקן).
