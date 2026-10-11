@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState, type DragEvent } from "react";
+import { useRef, useState, useTransition, type DragEvent } from "react";
 import { bulkImportAction } from "./actions";
 
 const initialState = {
@@ -9,8 +9,32 @@ const initialState = {
   summary: null as { imported: number; failed: number; errors: string[] } | null,
 };
 
+// Vercel rejects request bodies above ~4.5MB, so big images are re-encoded as JPEG first.
+const MAX_UPLOAD_BYTES = 3.5 * 1024 * 1024;
+
+async function shrinkIfNeeded(file: File): Promise<File> {
+  if (file.size <= MAX_UPLOAD_BYTES) return file;
+  const bitmap = await createImageBitmap(file);
+  let scale = Math.min(1, 2160 / Math.max(bitmap.width, bitmap.height));
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) break;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.88));
+    if (blob && blob.size <= MAX_UPLOAD_BYTES) return new File([blob], file.name, { type: "image/jpeg" });
+    scale *= 0.8;
+  }
+  throw new Error("התמונה גדולה מדי גם אחרי כיווץ");
+}
+
 export default function ImportForm() {
-  const [state, formAction, pending] = useActionState(bulkImportAction, initialState);
+  const [state, setState] = useState(initialState);
+  const [pending, startTransition] = useTransition();
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,12 +58,39 @@ export default function ImportForm() {
     setFiles((prev) => prev.filter((_, i) => i !== idx));
   }
 
+  // One image per request: keeps each upload under the body limit and shows progress.
   function handleSubmit(formData: FormData) {
-    formData.delete("images");
-    for (const file of files) {
-      formData.append("images", file);
-    }
-    formAction(formData);
+    const platform = String(formData.get("platform") ?? "both");
+    const descriptions = String(formData.get("descriptions") ?? "");
+    const batch = files;
+    startTransition(async () => {
+      let imported = 0;
+      let failed = 0;
+      const errors: string[] = [];
+      for (let i = 0; i < batch.length; i++) {
+        setState({ error: null, progress: { current: i + 1, total: batch.length }, summary: null });
+        try {
+          const fd = new FormData();
+          fd.append("images", await shrinkIfNeeded(batch[i]));
+          fd.append("platform", platform);
+          fd.append("descriptions", descriptions);
+          const r = await bulkImportAction(initialState, fd);
+          if (r.error) {
+            failed++;
+            errors.push(`${batch[i].name}: ${r.error}`);
+          } else if (r.summary) {
+            imported += r.summary.imported;
+            failed += r.summary.failed;
+            errors.push(...r.summary.errors);
+          }
+        } catch (err) {
+          failed++;
+          errors.push(`${batch[i].name}: ${err instanceof Error ? err.message : "שגיאה לא ידועה"}`);
+        }
+      }
+      setState({ error: null, progress: null, summary: { imported, failed, errors } });
+      setFiles([]);
+    });
   }
 
   return (
@@ -165,7 +216,11 @@ export default function ImportForm() {
         disabled={pending || files.length === 0}
         className="self-start rounded-full bg-primary px-8 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
       >
-        {pending ? `מייבא... (זה יכול לקחת כמה דקות)` : `ייבא ${files.length} תמונות`}
+        {pending
+          ? state.progress
+            ? `מייבא תמונה ${state.progress.current} מתוך ${state.progress.total}...`
+            : "מייבא..."
+          : `ייבא ${files.length} תמונות`}
       </button>
 
       {/* Status */}

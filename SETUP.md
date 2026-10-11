@@ -187,3 +187,15 @@
 אם בסיס הנתונים נוצר בלי טבלאות התוכן, אפשר להדביק בעורך ה-SQL את `drizzle/manual/apply-content-tables.sql`. הוא בטוח להרצה חוזרת
 ומוסיף בלבד: `topics`, `draft_posts`, `draft_emails`, `subscribers`, `email_sends`, `generation_runs`, `image_templates`.
 העלאת תמונות (ייבוא פוסטים, תבניות) דורשת חנות Blob מחוברת לפרויקט ב-Vercel: או `BLOB_READ_WRITE_TOKEN`, או `BLOB_STORE_ID` (חיבור OIDC, בלי טוקן).
+
+## תוכן מקנבה (`/admin/canva`)
+
+בוחרים עיצוב מהחשבון בקנבה, המערכת מייצאת עמוד כ-PNG, שומרת עותק ב-Blob, ג׳מיני כותב כיתוב, והפוסט נכנס ל"טיוטות לאישור".
+
+1. בפורטל המפתחים של קנבה (אפליקציית ה-Connect שכבר קיימת) להוסיף Redirect URL: `https://app.ticofinance.co.il/api/canva/callback`.
+   ההרשאות הנדרשות: `design:content:read`, `design:meta:read`, `asset:read`, `folder:read`.
+2. ב-Vercel להגדיר `CANVA_CLIENT_ID` ו-`CANVA_CLIENT_SECRET` (אותם ערכים כמו בפרויקט `tico-chatbot`).
+3. מסד הנתונים: `npm run db:migrate`, או להדביק `drizzle/manual/apply-canva.sql` (בטוח להרצה חוזרת).
+4. להיכנס ל"תוכן" וללחוץ "חבר קנבה" פעם אחת.
+
+הערות: קישור ההורדה של קנבה תקף 24 שעות, לכן העותק נשמר אצלנו. פרסום אוטומטי לאינסטגרם לא חלק מהמודול (ממתין לאישור מטא).
