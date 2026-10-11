@@ -122,7 +122,7 @@ function LeadItem({ l, showTime, overdue }: { l: LeadRow; showTime?: boolean; ov
         </div>
         {l.nextStep && <div className="truncate text-sm text-foreground/70">{l.nextStep}</div>}
         {overdue && at && (
-          <div className="text-xs text-button">באיחור מאז {at.toLocaleDateString("he-IL")}</div>
+          <div className="text-xs text-rose-600">באיחור מאז {at.toLocaleDateString("he-IL")}</div>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2 text-sm">

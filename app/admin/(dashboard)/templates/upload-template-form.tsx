@@ -78,7 +78,7 @@ export default function UploadTemplateForm() {
         >
           {pending ? "מעלה..." : "הוספת תבנית"}
         </button>
-        {state.error && <span className="text-sm text-button">{state.error}</span>}
+        {state.error && <span className="text-sm text-rose-600">{state.error}</span>}
       </div>
     </form>
   );

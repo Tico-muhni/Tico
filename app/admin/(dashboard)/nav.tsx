@@ -41,7 +41,7 @@ export default function Nav({ email, logout }: { email?: string | null; logout: 
         <div className="mt-1 border-t border-black/5 px-3 pt-2 text-xs text-foreground/60">
           {email && <div className="mb-1 truncate">{email}</div>}
           <form action={logout}>
-            <button type="submit" className="text-sm text-button">התנתקות</button>
+            <button type="submit" className="text-sm text-rose-600">התנתקות</button>
           </form>
         </div>
       </div>

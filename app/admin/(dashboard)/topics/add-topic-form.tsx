@@ -26,7 +26,7 @@ export default function AddTopicForm() {
       >
         {pending ? "מוסיף..." : "הוספה לרשימת הנושאים"}
       </button>
-      {state.error && <span className="text-sm text-button">{state.error}</span>}
+      {state.error && <span className="text-sm text-rose-600">{state.error}</span>}
     </form>
   );
 }

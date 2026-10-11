@@ -28,7 +28,7 @@ export default function ImportCsvForm() {
       >
         {pending ? "מייבא..." : "ייבוא"}
       </button>
-      {state.error && <span className="text-sm text-button">{state.error}</span>}
+      {state.error && <span className="text-sm text-rose-600">{state.error}</span>}
       {state.summary && (
         <span className="text-sm text-emerald-700">
           נמצאו {state.summary.total} שורות · יובאו {state.summary.imported} ·
