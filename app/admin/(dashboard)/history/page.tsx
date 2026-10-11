@@ -19,7 +19,7 @@ const EMAIL_STATUS_LABEL: Record<string, string> = {
 
 function statusColor(status: string) {
   if (status === "published" || status === "sent") return "text-emerald-700";
-  if (status === "failed") return "text-button";
+  if (status === "failed") return "text-rose-600";
   if (status === "rejected") return "text-foreground/50";
   return "text-secondary";
 }
@@ -63,7 +63,7 @@ export default async function HistoryPage() {
                   {p.finalCaptionFacebook || p.aiCaptionFacebook}
                 </span>
                 {p.publishError && (
-                  <span className="text-xs text-button">{p.publishError}</span>
+                  <span className="text-xs text-rose-600">{p.publishError}</span>
                 )}
               </div>
               {p.status === "failed" && (
@@ -103,7 +103,7 @@ export default async function HistoryPage() {
                   )}
                 </span>
                 {e.sendError && (
-                  <span className="text-xs text-button">{e.sendError}</span>
+                  <span className="text-xs text-rose-600">{e.sendError}</span>
                 )}
               </div>
               {e.status === "failed" && (

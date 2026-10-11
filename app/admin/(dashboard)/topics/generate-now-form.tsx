@@ -29,7 +29,7 @@ export default function GenerateNowForm() {
       >
         {pending ? "יוצר תוכן..." : "צור טיוטות עכשיו"}
       </button>
-      {state.error && <span className="text-sm text-button">{state.error}</span>}
+      {state.error && <span className="text-sm text-rose-600">{state.error}</span>}
       {state.success && <span className="text-sm text-emerald-700">{state.success}</span>}
     </form>
   );

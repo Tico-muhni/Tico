@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Tico RTM",
+    title: "Tico",
   },
   icons: {
     icon: "/favicon-32.png",

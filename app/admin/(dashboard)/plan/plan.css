@@ -17,25 +17,6 @@
   --pl-soft: rgba(0, 0, 0, 0.04);
   --pl-mute: color-mix(in srgb, var(--brand-text) 58%, transparent);
 }
-@media (prefers-color-scheme: dark) {
-  .plan {
-    --pl-accent: #7fb0e3;
-    --pl-accent-fg: #10161f;
-    --pl-money: #4fc083;
-    --pl-s50: #f5ac32;
-    --pl-s100: #4fc083;
-    --pl-s150: #a9c4e4;
-    --pl-t1: #4fc083; --pl-t2: #6c9ad0; --pl-t3: #f5ac32; --pl-t4: #f07c86; --pl-t5: #7fbfcf;
-    --pl-t6: #b79bdb; --pl-t7: #d69255; --pl-t8: #62c3d9; --pl-t9: #a8ba5e; --pl-t10: #d77fa0;
-    --pl-good: #5bd08c; --pl-good-bg: #143222;
-    --pl-bad: #ff8a93; --pl-bad-bg: #3a1e24;
-    --pl-warn: #f5ac32; --pl-warn-bg: #3a2c10;
-    --pl-line: rgba(255, 255, 255, 0.14);
-    --pl-grid: rgba(255, 255, 255, 0.08);
-    --pl-soft: rgba(255, 255, 255, 0.06);
-  }
-}
-
 .plan .num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .plan input[type="range"] { accent-color: var(--pl-accent); }
 .plan :focus-visible { outline: 3px solid color-mix(in srgb, var(--pl-accent) 45%, transparent); outline-offset: 2px; }
