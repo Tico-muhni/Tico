@@ -6,6 +6,7 @@ import { currentUserId } from "@/lib/auth";
 import { planSettingsSchema } from "@/lib/business-plan/schemas";
 import type { DayEntry, PlanSettings } from "@/lib/business-plan/types";
 import type { LeadRow } from "../leads/leads-board";
+import { getCalendarEvents } from "@/lib/calendar";
 import HomeClient from "./home-client";
 
 export const metadata = { title: "היום שלי | Tico" };
@@ -50,5 +51,7 @@ export default async function HomePage() {
     createdAt: r.createdAt.toISOString(),
   }));
 
-  return <HomeClient leads={initialLeads} settings={settings} days={days} />;
+  const calendar = await getCalendarEvents();
+
+  return <HomeClient leads={initialLeads} settings={settings} days={days} calendar={calendar} />;
 }

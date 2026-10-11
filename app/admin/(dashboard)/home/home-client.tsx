@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useSyncExternalStore } from "react";
+import type { CalendarEvent, CalendarResult } from "@/lib/calendar";
 import { STAGE_LABELS, TYPE_LABELS, whatsappLink } from "@/lib/leads";
 import type { DayEntry, PlanSettings } from "@/lib/business-plan/types";
 import { defaultSettings } from "@/lib/business-plan/defaults";
@@ -21,6 +22,7 @@ export default function HomeClient(props: {
   leads: LeadRow[];
   settings: PlanSettings | null;
   days: Record<string, DayEntry>;
+  calendar: CalendarResult;
 }) {
   // "Today" only exists on the client (the server may be in another timezone).
   const todayKey = useSyncExternalStore(noopSubscribe, () => dk(new Date()), () => null);
@@ -28,10 +30,11 @@ export default function HomeClient(props: {
   return <Home {...props} today={pdt(todayKey)} />;
 }
 
-function Home({ leads, settings, days, today }: {
+function Home({ leads, settings, days, calendar, today }: {
   leads: LeadRow[];
   settings: PlanSettings | null;
   days: Record<string, DayEntry>;
+  calendar: CalendarResult;
   today: Date;
 }) {
   const dayStart = today.getTime();
@@ -47,6 +50,14 @@ function Home({ leads, settings, days, today }: {
     };
   }, [leads, dayStart, dayEnd]);
 
+  const todayKey = dk(today);
+  const events = useMemo(() => {
+    if (calendar.status !== "ok") return [];
+    return calendar.events.filter((e) =>
+      e.allDay ? e.dayKey === todayKey : new Date(e.start).getTime() < dayEnd && new Date(e.end).getTime() > dayStart,
+    );
+  }, [calendar, todayKey, dayStart, dayEnd]);
+
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "בוקר טוב" : hour < 18 ? "צהריים טובים" : "ערב טוב";
 
@@ -60,13 +71,20 @@ function Home({ leads, settings, days, today }: {
       </div>
 
       <section className={card}>
-        <Head title="פגישות היום" count={meetings.length} href="/admin/leads" />
-        {meetings.length === 0 ? (
+        <Head title="פגישות היום" count={meetings.length + events.length} href="/admin/leads" />
+        {meetings.length + events.length === 0 ? (
           <Empty text="אין פגישות מתוכננות להיום." />
         ) : (
           <ul className="divide-y divide-black/5">
+            {events.map((e) => <EventItem key={e.id} e={e} />)}
             {meetings.map((l) => <LeadItem key={l.id} l={l} showTime />)}
           </ul>
+        )}
+        {calendar.status === "off" && (
+          <p className="mt-2 text-xs text-foreground/50">היומן של גוגל עוד לא מחובר, ולכן מוצגות רק פגישות שהוכנסו כלידים.</p>
+        )}
+        {calendar.status === "error" && (
+          <p className="mt-2 text-xs text-rose-600">לא הצלחתי לקרוא את היומן של גוגל כרגע.</p>
         )}
       </section>
 
@@ -105,6 +123,24 @@ function Head({ title, count, href }: { title: string; count: number; href: stri
 
 function Empty({ text }: { text: string }) {
   return <p className="py-3 text-sm text-foreground/50">{text}</p>;
+}
+
+function EventItem({ e }: { e: CalendarEvent }) {
+  const fmt = (iso: string) => new Date(iso).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+  return (
+    <li className="flex items-start justify-between gap-3 py-2.5">
+      <div className="min-w-0">
+        <div className="font-medium">
+          {e.title}
+          <span className="mr-2 text-xs font-normal text-foreground/50">יומן</span>
+        </div>
+        {e.location && <div className="truncate text-sm text-foreground/70">{e.location}</div>}
+      </div>
+      <span dir="ltr" className="shrink-0 text-sm text-foreground/60">
+        {e.allDay ? "כל היום" : `${fmt(e.start)}–${fmt(e.end)}`}
+      </span>
+    </li>
+  );
 }
 
 function LeadItem({ l, showTime, overdue }: { l: LeadRow; showTime?: boolean; overdue?: boolean }) {
