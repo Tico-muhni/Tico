@@ -3,6 +3,7 @@ import { auth, signOut } from "@/lib/auth";
 
 const NAV_ITEMS = [
   { href: "/admin/tikia", label: "תיקיה" },
+  { href: "/admin/plan", label: "תוכנית עסקית" },
   { href: "/admin/drafts", label: "טיוטות לאישור" },
   { href: "/admin/import", label: "ייבוא פוסטים" },
   { href: "/admin/chatbot", label: "צ'אטבוט" },
