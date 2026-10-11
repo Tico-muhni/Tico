@@ -1,12 +1,18 @@
 import { put } from "@vercel/blob";
 
 // The project may carry two Blob stores: the original (private) one under the plain
-// BLOB_* names and the public store we upload to, connected with the "PUBLIC" prefix.
+// BLOB_* names and the public store we upload to, connected with the "PUBLIC" prefix
+// (Vercel then names the variables PUBLIC_STORE_ID, PUBLIC_READ_WRITE_TOKEN, ...).
 // Prefer the public store. A token is optional: with Vercel's OIDC connection only the
 // store id exists and the SDK authenticates by itself.
+const env = process.env;
 const storeOptions = () => ({
-  token: process.env.PUBLIC_BLOB_READ_WRITE_TOKEN || process.env.BLOB_READ_WRITE_TOKEN || undefined,
-  storeId: process.env.PUBLIC_BLOB_STORE_ID || undefined,
+  token:
+    env.PUBLIC_READ_WRITE_TOKEN ||
+    env.PUBLIC_BLOB_READ_WRITE_TOKEN ||
+    env.BLOB_READ_WRITE_TOKEN ||
+    undefined,
+  storeId: env.PUBLIC_STORE_ID || env.PUBLIC_BLOB_STORE_ID || undefined,
 });
 
 export async function uploadDraftImage(file: File): Promise<string> {
