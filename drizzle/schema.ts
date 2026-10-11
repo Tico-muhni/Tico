@@ -472,3 +472,58 @@ export const planEntries = pgTable(
   },
   (t) => [unique("plan_entries_user_kind_key_unique").on(t.userId, t.kind, t.key)]
 );
+
+// Leads: every person who might become a client, from any source (groups, site,
+// lectures, partners, referrals). The funnel stage and the next step live here.
+export const leadStageEnum = pgEnum("lead_stage", [
+  "found",
+  "replied",
+  "conversation",
+  "meeting",
+  "client",
+  "lost",
+]);
+
+export const leadTypeEnum = pgEnum("lead_type", [
+  "upgrader",
+  "investor",
+  "refinance",
+  "purchase",
+  "lecture",
+  "other",
+]);
+
+export const leads = pgTable(
+  "leads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // Where it came from: facebook, instagram, site, lecture, partner, referral...
+    source: text("source").notNull().default("manual"),
+    medium: text("medium"),
+    campaign: text("campaign"),
+    groupName: text("group_name"),
+    postUrl: text("post_url"),
+    name: text("name").notNull(),
+    phone: text("phone"),
+    topic: text("topic"),
+    type: leadTypeEnum("type").notNull().default("other"),
+    stage: leadStageEnum("stage").notNull().default("found"),
+    nextStep: text("next_step"),
+    nextAt: timestamp("next_at", { withTimezone: true }),
+    // Estimated fee if it closes (₪).
+    value: integer("value"),
+    notes: text("notes").notNull().default(""),
+    // Lets a scanner re-send the same find without creating duplicates.
+    externalKey: text("external_key"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [unique("leads_user_external_key_unique").on(t.userId, t.externalKey)]
+);
