@@ -1,0 +1,91 @@
+/* Tokens for the business-plan module. Built on the app's brand colors (globals.css). */
+.plan {
+  --pl-accent: var(--brand-primary);
+  --pl-accent-fg: #ffffff;
+  --pl-money: #2e8b57;
+  --pl-gold: #f5ac32;
+  --pl-s50: #c98410;
+  --pl-s100: #2e8b57;
+  --pl-s150: var(--brand-primary);
+  --pl-t1: #2a7f4f; --pl-t2: #2f5d8c; --pl-t3: #e0a021; --pl-t4: #d64550; --pl-t5: #6fa8b8;
+  --pl-t6: #8c6bb1; --pl-t7: #b5651d; --pl-t8: #3b9ab2; --pl-t9: #7a8b3c; --pl-t10: #a04668;
+  --pl-good: #1f7a48; --pl-good-bg: #e0f2e7;
+  --pl-bad: #c42f3c; --pl-bad-bg: #fbe6e8;
+  --pl-warn: #9a6200; --pl-warn-bg: #fdf1d8;
+  --pl-line: rgba(0, 0, 0, 0.1);
+  --pl-grid: rgba(0, 0, 0, 0.06);
+  --pl-soft: rgba(0, 0, 0, 0.04);
+  --pl-mute: color-mix(in srgb, var(--brand-text) 58%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  .plan {
+    --pl-accent: #7fb0e3;
+    --pl-accent-fg: #10161f;
+    --pl-money: #4fc083;
+    --pl-s50: #f5ac32;
+    --pl-s100: #4fc083;
+    --pl-s150: #a9c4e4;
+    --pl-t1: #4fc083; --pl-t2: #6c9ad0; --pl-t3: #f5ac32; --pl-t4: #f07c86; --pl-t5: #7fbfcf;
+    --pl-t6: #b79bdb; --pl-t7: #d69255; --pl-t8: #62c3d9; --pl-t9: #a8ba5e; --pl-t10: #d77fa0;
+    --pl-good: #5bd08c; --pl-good-bg: #143222;
+    --pl-bad: #ff8a93; --pl-bad-bg: #3a1e24;
+    --pl-warn: #f5ac32; --pl-warn-bg: #3a2c10;
+    --pl-line: rgba(255, 255, 255, 0.14);
+    --pl-grid: rgba(255, 255, 255, 0.08);
+    --pl-soft: rgba(255, 255, 255, 0.06);
+  }
+}
+
+.plan .num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.plan input[type="range"] { accent-color: var(--pl-accent); }
+.plan :focus-visible { outline: 3px solid color-mix(in srgb, var(--pl-accent) 45%, transparent); outline-offset: 2px; }
+
+.plan .pl-field {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--pl-line); border-radius: 0.5rem; background: var(--pl-soft); padding-inline: 0.625rem;
+}
+.plan .pl-field:focus-within { border-color: var(--pl-accent); }
+.plan .pl-field input, .plan .pl-field select {
+  flex: 1; min-width: 0; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 600;
+  padding-block: 0.5rem; outline: none; font-variant-numeric: tabular-nums;
+}
+.plan .pl-field select option { color: initial; }
+.plan .pl-field .u { color: var(--pl-mute); font-size: 0.8125rem; }
+
+.plan table.pl-table { border-collapse: collapse; width: 100%; }
+.plan .pl-table th, .plan .pl-table td {
+  padding: 0.5rem 0.625rem; text-align: start; border-bottom: 1px solid var(--pl-line); vertical-align: middle; font-size: 0.875rem;
+}
+.plan .pl-table th { font-weight: 600; color: var(--pl-mute); font-size: 0.8125rem; }
+.plan .pl-table thead th { border-bottom-width: 2px; vertical-align: bottom; }
+.plan .pl-table td.v { font-weight: 600; }
+.plan .pl-table tfoot th, .plan .pl-table tfoot td { border-top: 2px solid var(--pl-line); border-bottom: 0; font-weight: 700; color: inherit; }
+.plan .pl-table tr.sep > * { border-top: 2px solid var(--pl-line); }
+@media (max-width: 520px) { .plan .pl-table th, .plan .pl-table td { padding: 0.5rem 0.375rem; font-size: 0.8125rem; } }
+
+.plan .pl-pill { display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 1px 0.5rem; border-radius: 999px; white-space: nowrap; }
+.plan .pl-pill.good { color: var(--pl-good); background: var(--pl-good-bg); }
+.plan .pl-pill.bad { color: var(--pl-bad); background: var(--pl-bad-bg); }
+.plan .pl-pill.warn { color: var(--pl-warn); background: var(--pl-warn-bg); }
+
+.plan .pl-chip {
+  border: 1.5px solid var(--pl-line); background: transparent; color: inherit; border-radius: 999px;
+  padding: 0.4rem 0.9rem; font-weight: 600; font-size: 0.875rem; cursor: pointer;
+}
+.plan .pl-chip[aria-pressed="true"] { border-color: var(--pl-accent); background: color-mix(in srgb, var(--pl-accent) 12%, transparent); }
+
+.plan .pl-seg { display: inline-flex; border: 1px solid var(--pl-line); border-radius: 0.625rem; overflow: hidden; }
+.plan .pl-seg button { font-weight: 700; padding: 0.5rem 1rem; cursor: pointer; background: transparent; color: inherit; border-inline-start: 1px solid var(--pl-line); }
+.plan .pl-seg button:first-child { border-inline-start: 0; }
+.plan .pl-seg button[aria-pressed="true"] { background: var(--pl-accent); color: var(--pl-accent-fg); }
+
+.plan .pl-btn { font-weight: 700; border-radius: 999px; padding: 0.55rem 1.5rem; cursor: pointer; border: 1.5px solid var(--pl-line); background: transparent; color: inherit; }
+.plan .pl-btn.pri { background: var(--pl-accent); border-color: var(--pl-accent); color: var(--pl-accent-fg); }
+.plan .pl-btn:disabled { opacity: 0.5; cursor: default; }
+.plan .pl-link { background: none; border: 0; padding: 0; text-decoration: underline; color: var(--pl-mute); cursor: pointer; font-size: inherit; }
+
+.plan .pl-tooltip { position: absolute; pointer-events: none; z-index: 5; min-width: 9.5rem; padding: 0.5rem 0.625rem; font-size: 0.8125rem;
+  background: var(--surface); border: 1px solid var(--pl-line); border-radius: 0.5rem; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14); }
+.plan .pl-bigin { direction: ltr; display: flex; align-items: baseline; gap: 0.375rem; color: var(--pl-money); font-weight: 800; line-height: 1.1; font-size: clamp(2.75rem, 12vw, 3.75rem); align-self: flex-start; }
+.plan .pl-bigin input { font: inherit; color: inherit; background: transparent; border: 0; border-bottom: 3px dashed color-mix(in srgb, var(--pl-money) 40%, transparent); outline: none; width: 6.6ch; padding: 0; font-variant-numeric: tabular-nums; }
+.plan .pl-bigin input:focus { border-bottom-style: solid; }

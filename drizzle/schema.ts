@@ -5,6 +5,7 @@ import {
   uuid,
   integer,
   boolean,
+  jsonb,
   pgEnum,
   unique,
   AnyPgColumn,
@@ -435,3 +436,39 @@ export const tikiaScanRuns = pgTable("tikia_scan_runs", {
   status: rtmRunStatusEnum("status").notNull().default("running"),
   error: text("error"),
 });
+
+// Business plan module: one settings document per advisor, plus logged entries
+// (daily reports, marketing actions, monthly actual expenses).
+export const planEntryKindEnum = pgEnum("plan_entry_kind", [
+  "day",
+  "action",
+  "expense",
+]);
+
+export const planSettings = pgTable("plan_settings", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const planEntries = pgTable(
+  "plan_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: planEntryKindEnum("kind").notNull(),
+    // day: YYYY-MM-DD, expense: YYYY-MM, action: client generated id
+    key: text("key").notNull(),
+    data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [unique("plan_entries_user_kind_key_unique").on(t.userId, t.kind, t.key)]
+);
