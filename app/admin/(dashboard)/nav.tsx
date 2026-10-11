@@ -7,13 +7,14 @@ const MAIN = [
   { href: "/admin/home", label: "בית", icon: "🏠" },
   { href: "/admin/leads", label: "לידים", icon: "👥" },
   { href: "/admin/plan", label: "תוכנית", icon: "🎯" },
-  { href: "/admin/drafts", label: "תוכן", icon: "✍️" },
+  { href: "/admin/canva", label: "תוכן", icon: "✍️" },
 ];
 
 const MORE = [
+  { href: "/admin/drafts", label: "טיוטות לאישור" },
+  { href: "/admin/import", label: "ייבוא פוסטים ידני" },
   { href: "/admin/rtm", label: "RTM – בריפים יומיים" },
   { href: "/admin/tikia", label: "תיקיה" },
-  { href: "/admin/import", label: "ייבוא פוסטים" },
   { href: "/admin/subscribers", label: "רשימת תפוצה" },
   { href: "/admin/topics", label: "נושאים" },
   { href: "/admin/templates", label: "תבניות תמונה" },

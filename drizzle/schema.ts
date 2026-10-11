@@ -527,3 +527,16 @@ export const leads = pgTable(
   },
   (t) => [unique("leads_user_external_key_unique").on(t.userId, t.externalKey)]
 );
+
+// Canva connection (OAuth tokens) per advisor, used by the content library.
+export const canvaConnections = pgTable("canva_connections", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
