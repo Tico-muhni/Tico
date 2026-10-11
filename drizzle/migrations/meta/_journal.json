@@ -15,6 +15,13 @@
       "when": 1791710944762,
       "tag": "0001_business_plan",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791722432350,
+      "tag": "0002_leads",
+      "breakpoints": true
     }
   ]
 }

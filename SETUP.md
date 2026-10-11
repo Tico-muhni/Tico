@@ -152,3 +152,22 @@
 - הטבלאות החדשות (`plan_settings`, `plan_entries`) נוצרות עם `npm run db:push` (או `npm run db:migrate`).
 - אין צורך במשתני סביבה נוספים. הנתונים נשמרים לכל משתמש בנפרד.
 - חישובי המודל נמצאים ב-`lib/business-plan/` (פונקציות טהורות, בלי תלות ב-React).
+
+### לידים (`/admin/leads`)
+
+מאגר לידים אחד לכל המקורות, עם שלבים (נמצא, נענה, בשיחה, פגישה, לקוח, לא רלוונטי), הצעד הבא ותאריך, וסיכום לפי מקור.
+
+- הטבלאות נוצרות עם `npm run db:migrate` או `db:push`. אם בסיס הנתונים נוצר ב-`db:push` ואין לו היסטוריית מיגרציות
+  (למשל Neon ב-Vercel), אפשר להדביק בעורך ה-SQL את `drizzle/manual/apply-0001-0002.sql`. הוא בטוח להרצה חוזרת.
+- קליטה אוטומטית (משימות מתוזמנות, טפסים): `POST /api/leads` עם `Authorization: Bearer <LEADS_API_TOKEN>`.
+  משתני הסביבה הנדרשים ב-Vercel:
+  - `LEADS_API_TOKEN` - מחרוזת אקראית ארוכה (למשל `openssl rand -base64 32`).
+  - `LEADS_API_USER_EMAIL` - האימייל של היועץ שאליו משויכים הלידים.
+- דוגמה:
+  ```bash
+  curl -X POST https://<domain>/api/leads \
+    -H "Authorization: Bearer $LEADS_API_TOKEN" -H "Content-Type: application/json" \
+    -d '{"name":"שם","type":"refinance","source":"facebook","groupName":"קבוצה","postUrl":"https://...","externalKey":"fb-123"}'
+  ```
+  `externalKey` מונע כפילויות: שליחה חוזרת של אותו מפתח מדלגת ולא דורסת עריכות שנעשו באפליקציה.
+  `GET /api/leads?due=1` מחזיר את הלידים שהצעד הבא שלהם הגיע.
