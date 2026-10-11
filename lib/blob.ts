@@ -1,15 +1,18 @@
 import { put } from "@vercel/blob";
 
-// A token is optional: when the Blob store is connected through Vercel's newer
-// OIDC mode there is only BLOB_STORE_ID, and the SDK authenticates by itself
-// when no token is passed.
-const blobToken = () => process.env.BLOB_READ_WRITE_TOKEN || undefined;
+// The project may carry two Blob stores: the original (private) one under the plain
+// BLOB_* names and the public store we upload to, connected with the "PUBLIC" prefix.
+// Prefer the public store. A token is optional: with Vercel's OIDC connection only the
+// store id exists and the SDK authenticates by itself.
+const storeOptions = () => ({
+  token: process.env.PUBLIC_BLOB_READ_WRITE_TOKEN || process.env.BLOB_READ_WRITE_TOKEN || undefined,
+  storeId: process.env.PUBLIC_BLOB_STORE_ID || undefined,
+});
 
 export async function uploadDraftImage(file: File): Promise<string> {
-  const token = blobToken();
   const ext = file.name.split(".").pop() || "jpg";
   const pathname = `draft-images/${crypto.randomUUID()}.${ext}`;
-  const blob = await put(pathname, file, { access: "public", token });
+  const blob = await put(pathname, file, { access: "public", ...storeOptions() });
   return blob.url;
 }
 
@@ -17,12 +20,11 @@ export async function uploadGeneratedImage(
   buffer: Buffer,
   contentType = "image/png"
 ): Promise<string> {
-  const token = blobToken();
   const ext = contentType === "image/png" ? "png" : "jpg";
   const pathname = `generated-images/${crypto.randomUUID()}.${ext}`;
   const blob = await put(pathname, buffer, {
     access: "public",
-    token,
+    ...storeOptions(),
     contentType,
   });
   return blob.url;
@@ -33,12 +35,11 @@ export async function uploadTikiaDocument(
   filename: string,
   contentType = "application/octet-stream"
 ): Promise<string> {
-  const token = blobToken();
   const ext = filename.split(".").pop() || "bin";
   const pathname = `tikia-documents/${crypto.randomUUID()}.${ext}`;
   const blob = await put(pathname, buffer, {
     access: "public",
-    token,
+    ...storeOptions(),
     contentType,
   });
   return blob.url;
