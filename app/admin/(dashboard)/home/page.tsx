@@ -1,0 +1,54 @@
+import { redirect } from "next/navigation";
+import { desc, eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { leads, planEntries, planSettings } from "@/drizzle/schema";
+import { currentUserId } from "@/lib/auth";
+import { planSettingsSchema } from "@/lib/business-plan/schemas";
+import type { DayEntry, PlanSettings } from "@/lib/business-plan/types";
+import type { LeadRow } from "../leads/leads-board";
+import HomeClient from "./home-client";
+
+export const metadata = { title: "היום שלי | Tico" };
+
+export default async function HomePage() {
+  const userId = await currentUserId();
+  if (!userId) redirect("/admin/login");
+
+  const rows = await db
+    .select()
+    .from(leads)
+    .where(eq(leads.userId, userId))
+    .orderBy(desc(leads.createdAt));
+  const [settingsRow] = await db
+    .select()
+    .from(planSettings)
+    .where(eq(planSettings.userId, userId))
+    .limit(1);
+  const dayRows = await db.select().from(planEntries).where(eq(planEntries.userId, userId));
+
+  const parsed = settingsRow ? planSettingsSchema.safeParse(settingsRow.data) : null;
+  const settings: PlanSettings | null = parsed?.success ? parsed.data : null;
+  const days: Record<string, DayEntry> = {};
+  for (const e of dayRows) if (e.kind === "day") days[e.key] = e.data as unknown as DayEntry;
+
+  const initialLeads: LeadRow[] = rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    phone: r.phone,
+    source: r.source,
+    medium: r.medium,
+    campaign: r.campaign,
+    groupName: r.groupName,
+    postUrl: r.postUrl,
+    topic: r.topic,
+    type: r.type,
+    stage: r.stage,
+    nextStep: r.nextStep,
+    nextAt: r.nextAt ? r.nextAt.toISOString() : null,
+    value: r.value,
+    notes: r.notes,
+    createdAt: r.createdAt.toISOString(),
+  }));
+
+  return <HomeClient leads={initialLeads} settings={settings} days={days} />;
+}

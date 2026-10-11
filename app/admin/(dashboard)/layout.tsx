@@ -1,18 +1,5 @@
-import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
-
-const NAV_ITEMS = [
-  { href: "/admin/tikia", label: "תיקיה" },
-  { href: "/admin/plan", label: "תוכנית עסקית" },
-  { href: "/admin/leads", label: "לידים" },
-  { href: "/admin/drafts", label: "טיוטות לאישור" },
-  { href: "/admin/import", label: "ייבוא פוסטים" },
-  { href: "/admin/chatbot", label: "צ'אטבוט" },
-  { href: "/admin/subscribers", label: "רשימת תפוצה" },
-  { href: "/admin/topics", label: "נושאים" },
-  { href: "/admin/templates", label: "תבניות תמונה" },
-  { href: "/admin/history", label: "היסטוריה" },
-];
+import Nav from "./nav";
 
 export default async function DashboardLayout({
   children,
@@ -23,31 +10,15 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="flex items-center justify-between border-b border-black/5 bg-surface px-6 py-4">
-        <nav className="flex flex-wrap gap-4 text-sm font-medium text-primary">
-          {NAV_ITEMS.map((item) => (
-            <Link key={item.href} href={item.href} className="hover:text-secondary">
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="flex items-center gap-3">
-          {session?.user?.email && (
-            <span className="text-sm text-foreground/60">{session.user.email}</span>
-          )}
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/admin/login" });
-            }}
-          >
-            <button type="submit" className="text-sm text-foreground/60 hover:text-button">
-              התנתקות
-            </button>
-          </form>
-        </div>
-      </header>
-      <main className="flex-1 bg-background px-6 py-8">{children}</main>
+      <Nav
+        email={session?.user?.email}
+        logout={async () => {
+          "use server";
+          await signOut({ redirectTo: "/admin/login" });
+        }}
+      />
+      {/* Bottom padding keeps content clear of the mobile tab bar. */}
+      <main className="flex-1 bg-background px-4 pb-24 pt-6 md:px-6 md:pb-8 md:pt-8">{children}</main>
     </div>
   );
 }

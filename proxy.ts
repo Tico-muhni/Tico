@@ -26,7 +26,7 @@ export default function proxy(req: NextRequest) {
   }
 
   if (isLoggedIn && isLoginPage) {
-    return NextResponse.redirect(new URL("/admin/rtm", req.nextUrl.origin));
+    return NextResponse.redirect(new URL("/admin/home", req.nextUrl.origin));
   }
 
   return NextResponse.next();

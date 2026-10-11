@@ -2,11 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Tico RTM — בריפים יומיים",
-    short_name: "Tico RTM",
-    description:
-      'בריפים יומיים לסרטוני אינסטגרם בנושאי משכנתאות, ריבית ונדל"ן',
-    start_url: "/admin/rtm",
+    name: "Tico — המערכת של צ׳יקו",
+    short_name: "Tico",
+    description: "לידים, תוכנית עסקית ותוכן במקום אחד",
+    start_url: "/admin/home",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

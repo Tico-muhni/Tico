@@ -9,13 +9,15 @@ export async function loginAction(
 ): Promise<{ error: string | null }> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
-  // Only honor a callbackUrl that points at the RTM tool; anything else
+  // Only honor a callbackUrl that points at a provisioned page; anything else
   // (e.g. a stale /admin/drafts link to the unprovisioned marketing pages)
-  // falls back to /admin/rtm so login never lands on a broken page.
+  // falls back to the home screen so login never lands on a broken page.
   const requested = String(formData.get("callbackUrl") ?? "");
-  const callbackUrl = requested.startsWith("/admin/rtm")
+  const callbackUrl = ["/admin/rtm", "/admin/home", "/admin/leads", "/admin/plan"].some((p) =>
+    requested.startsWith(p),
+  )
     ? requested
-    : "/admin/rtm";
+    : "/admin/home";
 
   try {
     await signIn("credentials", {
