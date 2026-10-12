@@ -51,6 +51,24 @@ export async function saveDraftPostAction(id: string, formData: FormData) {
   revalidatePath("/admin/drafts");
 }
 
+/** The advisor posted it by hand (copy caption + download images); record it as published. */
+export async function markPostPublishedManuallyAction(id: string, formData: FormData) {
+  await applyPostEdits(id, formData);
+  const reviewer = await reviewerEmail();
+  await db
+    .update(draftPosts)
+    .set({
+      status: "published",
+      reviewedBy: reviewer,
+      reviewedAt: new Date(),
+      publishedAt: new Date(),
+      publishError: null,
+    })
+    .where(eq(draftPosts.id, id));
+  revalidatePath("/admin/drafts");
+  revalidatePath("/admin/history");
+}
+
 export async function approveDraftPostAction(
   id: string,
   _prevState: ActionResult,

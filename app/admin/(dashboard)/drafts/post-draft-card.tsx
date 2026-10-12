@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef, useState } from "react";
 import Image from "next/image";
 import { postImages } from "@/lib/post-images";
 import {
   approveDraftPostAction,
+  markPostPublishedManuallyAction,
   rejectDraftPostAction,
   saveDraftPostAction,
 } from "./actions";
@@ -38,12 +39,46 @@ export default function PostDraftCard({ draft }: { draft: PostDraft }) {
     success: null,
   });
 
+  const formRef = useRef<HTMLFormElement>(null);
+  const [note, setNote] = useState("");
+
+  const field = (name: string) =>
+    (formRef.current?.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | null)?.value ?? "";
+
+  async function copyCaption(name: "captionInstagram" | "captionFacebook") {
+    const tags = field("hashtags")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .map((t) => (t.startsWith("#") ? t : `#${t}`))
+      .join(" ");
+    const text = [field(name), tags].filter(Boolean).join("\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setNote(name === "captionInstagram" ? "כיתוב האינסטגרם הועתק (כולל האשטגים)" : "כיתוב הפייסבוק הועתק (כולל האשטגים)");
+    } catch {
+      setNote("ההעתקה נחסמה בדפדפן. סמן את הכיתוב והעתק ידנית.");
+    }
+  }
+
+  async function downloadImages() {
+    setNote("מוריד תמונות…");
+    for (const [i, src] of slides.entries()) {
+      const a = document.createElement("a");
+      a.href = `/api/draft-image?url=${encodeURIComponent(src)}&name=post-${String(i + 1).padStart(2, "0")}.png`;
+      a.download = "";
+      a.click();
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    setNote(slides.length > 1 ? "התמונות ירדו לפי סדר השקפים" : "התמונה ירדה");
+  }
+
   const slides = postImages(draft);
   const needsInstagramImage =
     draft.platform === "instagram" || draft.platform === "both";
 
   return (
-    <form action={formAction} className="rounded-2xl border border-black/5 bg-surface p-5">
+    <form ref={formRef} action={formAction} className="rounded-2xl border border-black/5 bg-surface p-5">
       <div className="mb-3 flex items-center justify-between">
         <span className="rounded-full bg-accent/40 px-3 py-1 text-xs font-medium text-primary">
           {slides.length > 1 ? `קרוסלה · ${slides.length} תמונות` : "פוסט"} · {PLATFORM_LABEL[draft.platform]}
@@ -143,6 +178,31 @@ export default function PostDraftCard({ draft }: { draft: PostDraft }) {
           />
           אין הבטחות תוצאה/ריבית/רווח בפוסט
         </label>
+      </div>
+
+      <div className="mt-4 rounded-xl bg-primary/5 p-3">
+        <div className="mb-2 text-sm font-medium text-primary">פרסום ידני (בלי מטא)</div>
+        <div className="flex flex-wrap gap-2 text-sm">
+          <button type="button" onClick={() => copyCaption("captionInstagram")} className="rounded-full border border-black/10 bg-surface px-3 py-1.5 hover:bg-black/5">
+            העתק כיתוב לאינסטגרם
+          </button>
+          <button type="button" onClick={() => copyCaption("captionFacebook")} className="rounded-full border border-black/10 bg-surface px-3 py-1.5 hover:bg-black/5">
+            העתק כיתוב לפייסבוק
+          </button>
+          {slides.length > 0 && (
+            <button type="button" onClick={downloadImages} className="rounded-full border border-black/10 bg-surface px-3 py-1.5 hover:bg-black/5">
+              {slides.length > 1 ? `הורד ${slides.length} תמונות` : "הורד תמונה"}
+            </button>
+          )}
+          <button
+            type="submit"
+            formAction={markPostPublishedManuallyAction.bind(null, draft.id)}
+            className="rounded-full bg-primary px-3 py-1.5 text-white hover:opacity-90"
+          >
+            סמן כפורסם ידנית
+          </button>
+        </div>
+        {note && <div className="mt-2 text-xs text-foreground/70">{note}</div>}
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
