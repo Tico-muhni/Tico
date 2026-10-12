@@ -45,32 +45,49 @@ export async function designPagesAction(designId: string): Promise<{ ok: true; p
   }
 }
 
-/** Exports one page from Canva, stores it, writes a caption with Gemini and adds a draft for approval. */
-export async function createDraftFromCanvaAction(input: {
+/** Exports one page from Canva and keeps our own copy (Canva's link expires after 24h). */
+export async function exportCanvaPageAction(input: {
   designId: string;
   page: number;
-  title: string;
-  description: string;
-  platform: "facebook" | "instagram" | "both";
-}): Promise<{ ok: true } | Fail> {
+}): Promise<{ ok: true; imageUrl: string } | Fail> {
   const userId = await currentUserId();
   if (!userId) return fail(new Error("לא מחובר"));
   try {
     const url = await exportDesignPage(userId, input.designId, input.page);
     const res = await fetch(url);
     if (!res.ok) throw new Error("הורדת התמונה מקנבה נכשלה");
-    // Canva's download link expires after 24h, so keep our own copy.
     const imageUrl = await uploadGeneratedImage(Buffer.from(await res.arrayBuffer()), "image/png");
+    return { ok: true, imageUrl };
+  } catch (e) {
+    return fail(e);
+  }
+}
 
+/** One draft for approval: a carousel when there are several images, else a single-image post. */
+export async function createCanvaDraftAction(input: {
+  imageUrls: string[];
+  title: string;
+  description: string;
+  platform: "facebook" | "instagram" | "both";
+}): Promise<{ ok: true } | Fail> {
+  const userId = await currentUserId();
+  if (!userId) return fail(new Error("לא מחובר"));
+  if (input.imageUrls.length === 0) return fail(new Error("אין תמונות"));
+  if (input.imageUrls.length > 10) return fail(new Error("קרוסלה יכולה להכיל עד 10 תמונות"));
+  try {
     const desc = input.description.trim() || input.title || "פוסט שיווקי בנושא משכנתאות";
-    const captions = await generateHumanizedCaption(desc);
+    const carousel = input.imageUrls.length > 1;
+    const captions = await generateHumanizedCaption(
+      carousel ? `${desc} (קרוסלה של ${input.imageUrls.length} שקפים)` : desc,
+    );
 
     await db.insert(draftPosts).values({
       platform: input.platform,
       aiCaptionFacebook: captions.captionFacebook,
       aiCaptionInstagram: captions.captionInstagram,
       hashtags: captions.hashtags,
-      imageUrl,
+      imageUrl: input.imageUrls[0],
+      imageUrls: carousel ? input.imageUrls : [],
       imageSource: "canva",
       aiModel: getContentModel(),
       status: "pending_review",

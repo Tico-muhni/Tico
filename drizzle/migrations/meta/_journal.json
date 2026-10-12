@@ -29,6 +29,13 @@
       "when": 1791732935686,
       "tag": "0003_canva_connections",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791736222986,
+      "tag": "0004_carousel_images",
+      "breakpoints": true
     }
   ]
 }

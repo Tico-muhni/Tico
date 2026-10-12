@@ -1,0 +1,1 @@
+ALTER TABLE "draft_posts" ADD COLUMN "image_urls" text[] DEFAULT '{}' NOT NULL;

@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { draftPosts, draftEmails } from "@/drizzle/schema";
 import { auth } from "@/lib/auth";
 import { uploadDraftImage } from "@/lib/blob";
+import { postImages } from "@/lib/post-images";
 import { publishToFacebook, publishToInstagram } from "@/lib/meta";
 import { sendApprovedDraftEmail } from "@/lib/resend";
 
@@ -40,7 +41,7 @@ async function applyPostEdits(id: string, formData: FormData) {
       hashtags,
       disclaimerConfirmed,
       noGuaranteeConfirmed,
-      ...(imageUrl ? { imageUrl, imageSource: "manual_upload" } : {}),
+      ...(imageUrl ? { imageUrl, imageUrls: [], imageSource: "manual_upload" } : {}),
     })
     .where(eq(draftPosts.id, id));
 }
@@ -69,8 +70,9 @@ export async function approveDraftPostAction(
     };
   }
 
+  const images = postImages(post);
   const needsImage = post.platform === "instagram" || post.platform === "both";
-  if (needsImage && !post.imageUrl) {
+  if (needsImage && images.length === 0) {
     return {
       error: "פרסום לאינסטגרם דורש תמונה - יש להעלות תמונה קודם",
       success: null,
@@ -90,13 +92,13 @@ export async function approveDraftPostAction(
     if (post.platform === "facebook" || post.platform === "both") {
       facebookPostId = await publishToFacebook(
         post.finalCaptionFacebook || "",
-        post.imageUrl
+        images
       );
     }
     if (post.platform === "instagram" || post.platform === "both") {
       instagramPostId = await publishToInstagram(
         post.finalCaptionInstagram || "",
-        post.imageUrl!
+        images
       );
     }
 
@@ -154,13 +156,13 @@ export async function retryPublishPostAction(id: string) {
     if (post.platform === "facebook" || post.platform === "both") {
       facebookPostId = await publishToFacebook(
         post.finalCaptionFacebook || post.aiCaptionFacebook || "",
-        post.imageUrl
+        postImages(post)
       );
     }
     if (post.platform === "instagram" || post.platform === "both") {
       instagramPostId = await publishToInstagram(
         post.finalCaptionInstagram || post.aiCaptionInstagram || "",
-        post.imageUrl!
+        postImages(post)
       );
     }
 

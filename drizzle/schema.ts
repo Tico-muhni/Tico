@@ -123,6 +123,8 @@ export const draftPosts = pgTable("draft_posts", {
   overlayCta: text("overlay_cta"),
   overlayClosing: text("overlay_closing"),
   imageUrl: text("image_url"),
+  // Carousel posts: every slide in order (imageUrl holds the first). Empty for single-image posts.
+  imageUrls: text("image_urls").array().notNull().default([]),
   imageSource: text("image_source"),
   status: reviewStatusEnum("status").notNull().default("pending_review"),
   aiModel: text("ai_model"),

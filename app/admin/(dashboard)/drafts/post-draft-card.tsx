@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Image from "next/image";
+import { postImages } from "@/lib/post-images";
 import {
   approveDraftPostAction,
   rejectDraftPostAction,
@@ -17,6 +18,7 @@ type PostDraft = {
   finalCaptionInstagram: string | null;
   hashtags: string[];
   imageUrl: string | null;
+  imageUrls: string[];
   imageSource: string | null;
   topicTitle: string | null;
   disclaimerConfirmed: boolean;
@@ -36,6 +38,7 @@ export default function PostDraftCard({ draft }: { draft: PostDraft }) {
     success: null,
   });
 
+  const slides = postImages(draft);
   const needsInstagramImage =
     draft.platform === "instagram" || draft.platform === "both";
 
@@ -43,7 +46,7 @@ export default function PostDraftCard({ draft }: { draft: PostDraft }) {
     <form action={formAction} className="rounded-2xl border border-black/5 bg-surface p-5">
       <div className="mb-3 flex items-center justify-between">
         <span className="rounded-full bg-accent/40 px-3 py-1 text-xs font-medium text-primary">
-          פוסט · {PLATFORM_LABEL[draft.platform]}
+          {slides.length > 1 ? `קרוסלה · ${slides.length} תמונות` : "פוסט"} · {PLATFORM_LABEL[draft.platform]}
         </span>
         {draft.topicTitle && (
           <span className="text-xs text-foreground/50">{draft.topicTitle}</span>
@@ -81,24 +84,39 @@ export default function PostDraftCard({ draft }: { draft: PostDraft }) {
       </label>
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        {draft.imageUrl && (
-          <div className="flex flex-col items-center gap-1">
-            <Image
-              src={draft.imageUrl}
-              alt=""
-              width={96}
-              height={96}
-              unoptimized
-              className="h-24 w-24 rounded-lg object-cover"
-            />
+        {slides.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
+              {slides.map((src, i) => (
+                <div key={src} className="relative shrink-0">
+                  <Image
+                    src={src}
+                    alt=""
+                    width={96}
+                    height={96}
+                    unoptimized
+                    className="h-24 w-24 rounded-lg object-cover"
+                  />
+                  {slides.length > 1 && (
+                    <span className="absolute right-1 top-1 rounded bg-white/90 px-1.5 text-xs">{i + 1}</span>
+                  )}
+                </div>
+              ))}
+            </div>
             <span className="text-xs text-foreground/50">
-              {draft.imageSource === "auto_template" ? "נוצרה אוטומטית" : "הועלתה ידנית"}
+              {draft.imageSource === "auto_template"
+                ? "נוצרה אוטומטית"
+                : draft.imageSource === "canva"
+                  ? "מקנבה"
+                  : "הועלתה ידנית"}
             </span>
           </div>
         )}
         <label className="flex flex-col gap-1 text-sm">
-          {draft.imageUrl
-            ? "החלפת תמונה"
+          {slides.length > 1
+            ? "החלפה בתמונה אחת (מבטל את הקרוסלה)"
+            : slides.length === 1
+              ? "החלפת תמונה"
             : needsInstagramImage
               ? "תמונה (חובה לאינסטגרם)"
               : "תמונה (אופציונלי)"}
@@ -146,7 +164,7 @@ export default function PostDraftCard({ draft }: { draft: PostDraft }) {
         <button
           type="submit"
           formAction={rejectDraftPostAction.bind(null, draft.id)}
-          className="rounded-full px-4 py-1.5 text-sm font-medium text-button hover:bg-button/10"
+          className="rounded-full px-4 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50"
         >
           דחייה
         </button>

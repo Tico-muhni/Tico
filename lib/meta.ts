@@ -27,21 +27,39 @@ async function graphPost(
   return json;
 }
 
-/** Posts to the business Facebook Page. Returns the published post id. */
+/**
+ * Posts to the business Facebook Page. One image -> a photo post; several -> a
+ * multi-photo post (each photo is uploaded unpublished, then attached to one feed post).
+ * Returns the published post id.
+ */
 export async function publishToFacebook(
   message: string,
-  imageUrl?: string | null
+  imageUrls: string[] = []
 ): Promise<string> {
   const pageId = requireEnv("META_PAGE_ID");
   const accessToken = requireEnv("META_PAGE_ACCESS_TOKEN");
 
-  if (imageUrl) {
+  if (imageUrls.length === 1) {
     const result = await graphPost(`/${pageId}/photos`, {
-      url: imageUrl,
+      url: imageUrls[0],
       caption: message,
       access_token: accessToken,
     });
     return result.post_id || result.id;
+  }
+
+  if (imageUrls.length > 1) {
+    const params: Record<string, string> = { message, access_token: accessToken };
+    for (const [i, url] of imageUrls.entries()) {
+      const photo = await graphPost(`/${pageId}/photos`, {
+        url,
+        published: "false",
+        access_token: accessToken,
+      });
+      params[`attached_media[${i}]`] = JSON.stringify({ media_fbid: photo.id });
+    }
+    const result = await graphPost(`/${pageId}/feed`, params);
+    return result.id;
   }
 
   const result = await graphPost(`/${pageId}/feed`, {
@@ -52,25 +70,51 @@ export async function publishToFacebook(
 }
 
 /**
- * Publishes to the linked Instagram Business account. Instagram's Graph API
- * has no text-only post type, so imageUrl is required (two-step: create a
- * media container, then publish it).
+ * Publishes to the linked Instagram Business account. Instagram has no text-only post
+ * type, so at least one image is required. One image -> a single media container;
+ * 2-10 images -> a carousel (a child container per slide, then one carousel container).
  */
 export async function publishToInstagram(
   caption: string,
-  imageUrl: string
+  imageUrls: string[]
 ): Promise<string> {
   const igUserId = requireEnv("META_IG_USER_ID");
   const accessToken = requireEnv("META_PAGE_ACCESS_TOKEN");
 
-  const container = await graphPost(`/${igUserId}/media`, {
-    image_url: imageUrl,
-    caption,
-    access_token: accessToken,
-  });
+  if (imageUrls.length === 0) throw new Error("פרסום לאינסטגרם דורש תמונה");
+  if (imageUrls.length > 10) throw new Error("קרוסלה באינסטגרם יכולה להכיל עד 10 תמונות");
+
+  let creationId: string;
+  if (imageUrls.length === 1) {
+    creationId = (
+      await graphPost(`/${igUserId}/media`, {
+        image_url: imageUrls[0],
+        caption,
+        access_token: accessToken,
+      })
+    ).id;
+  } else {
+    const children: string[] = [];
+    for (const url of imageUrls) {
+      const child = await graphPost(`/${igUserId}/media`, {
+        image_url: url,
+        is_carousel_item: "true",
+        access_token: accessToken,
+      });
+      children.push(child.id);
+    }
+    creationId = (
+      await graphPost(`/${igUserId}/media`, {
+        media_type: "CAROUSEL",
+        children: children.join(","),
+        caption,
+        access_token: accessToken,
+      })
+    ).id;
+  }
 
   const publish = await graphPost(`/${igUserId}/media_publish`, {
-    creation_id: container.id,
+    creation_id: creationId,
     access_token: accessToken,
   });
 
