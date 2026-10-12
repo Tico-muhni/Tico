@@ -112,7 +112,7 @@ export default function EmailDraftCard({ draft }: { draft: EmailDraft }) {
         <button
           type="submit"
           formAction={rejectDraftEmailAction.bind(null, draft.id)}
-          className="rounded-full px-4 py-1.5 text-sm font-medium text-button hover:bg-button/10"
+          className="rounded-full px-4 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50"
         >
           דחייה
         </button>

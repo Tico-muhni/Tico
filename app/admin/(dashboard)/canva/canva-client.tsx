@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import type { CanvaItem, CanvaPage } from "@/lib/canva";
-import { browseCanvaAction, createDraftFromCanvaAction, designPagesAction } from "./actions";
+import { browseCanvaAction, createCanvaDraftAction, designPagesAction, exportCanvaPageAction } from "./actions";
 
 const NOTICES: Record<string, { text: string; ok: boolean }> = {
   connected: { text: "קנבה חובר בהצלחה.", ok: true },
@@ -177,6 +177,7 @@ function Composer({ design, onClose }: { design: CanvaItem; onClose: () => void 
   const [picked, setPicked] = useState<number[]>([]);
   const [description, setDescription] = useState("");
   const [platform, setPlatform] = useState<"both" | "instagram" | "facebook">("both");
+  const [mode, setMode] = useState<"carousel" | "separate">("carousel");
   const [progress, setProgress] = useState("");
   const [result, setResult] = useState<{ ok: number; failed: string[] } | null>(null);
   const [busy, startTransition] = useTransition();
@@ -195,23 +196,27 @@ function Composer({ design, onClose }: { design: CanvaItem; onClose: () => void 
     };
   }, [design.id]);
 
-  const toggle = (i: number) => setPicked((p) => (p.includes(i) ? p.filter((x) => x !== i) : [...p, i].sort((a, b) => a - b)));
+  const toggle = (i: number) => setPicked((p) => (p.includes(i) ? p.filter((x) => x !== i) : [...p, i]));
 
   function create() {
     startTransition(async () => {
-      let ok = 0;
+      const urls: string[] = [];
       const failed: string[] = [];
       for (let n = 0; n < picked.length; n++) {
         setProgress(`מייצא עמוד ${picked[n]} (${n + 1} מתוך ${picked.length})…`);
-        const r = await createDraftFromCanvaAction({
-          designId: design.id,
-          page: picked[n],
-          title: design.name,
-          description,
-          platform,
-        });
-        if (r.ok) ok++;
+        const r = await exportCanvaPageAction({ designId: design.id, page: picked[n] });
+        if (r.ok) urls.push(r.imageUrl);
         else failed.push(`עמוד ${picked[n]}: ${r.error}`);
+      }
+
+      // Carousel: one draft with every slide. Separate: one draft per slide.
+      const groups = mode === "carousel" ? (urls.length ? [urls] : []) : urls.map((u) => [u]);
+      let ok = 0;
+      for (const [g, group] of groups.entries()) {
+        setProgress(`כותב כיתוב (${g + 1} מתוך ${groups.length})…`);
+        const r = await createCanvaDraftAction({ imageUrls: group, title: design.name, description, platform });
+        if (r.ok) ok++;
+        else failed.push(r.error);
       }
       setProgress("");
       setResult({ ok, failed });
@@ -232,7 +237,7 @@ function Composer({ design, onClose }: { design: CanvaItem; onClose: () => void 
 
       {pages && pages.length > 1 && (
         <>
-          <p className="mb-2 text-sm text-foreground/70">בחר אילו עמודים להפוך לפוסטים (כל עמוד הוא פוסט נפרד):</p>
+          <p className="mb-2 text-sm text-foreground/70">בחר אילו עמודים להכניס (לפי הסדר שבו סימנת אותם):</p>
           <ul className="mb-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
             {pages.map((p) => (
               <li key={p.index}>
@@ -248,7 +253,11 @@ function Composer({ design, onClose }: { design: CanvaItem; onClose: () => void 
                     <div className="flex aspect-square items-center justify-center bg-black/5 text-xs">עמוד {p.index}</div>
                   )}
                   <span className="absolute right-1 top-1 rounded bg-white/90 px-1.5 text-xs">{p.index}</span>
-                  {picked.includes(p.index) && <span className="absolute left-1 top-1 rounded bg-button px-1.5 text-xs text-white">✓</span>}
+                  {picked.includes(p.index) && (
+                    <span className="absolute left-1 top-1 rounded bg-button px-1.5 text-xs text-white">
+                      {picked.indexOf(p.index) + 1}
+                    </span>
+                  )}
                 </button>
               </li>
             ))}
@@ -268,6 +277,18 @@ function Composer({ design, onClose }: { design: CanvaItem; onClose: () => void 
               className="w-full rounded-xl border border-black/10 px-3 py-2 text-sm"
             />
           </label>
+          {picked.length > 1 && (
+            <div className="space-y-1 text-sm">
+              <label className="flex items-center gap-2">
+                <input type="radio" checked={mode === "carousel"} onChange={() => setMode("carousel")} />
+                קרוסלה אחת עם {picked.length} שקפים (פוסט אחד)
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="radio" checked={mode === "separate"} onChange={() => setMode("separate")} />
+                {picked.length} פוסטים נפרדים, תמונה בכל אחד
+              </label>
+            </div>
+          )}
           <label className="block text-sm">
             <span className="mb-1 block font-medium text-foreground/70">פלטפורמה</span>
             <select
@@ -281,7 +302,13 @@ function Composer({ design, onClose }: { design: CanvaItem; onClose: () => void 
             </select>
           </label>
           <button type="button" className={btn} disabled={busy || picked.length === 0} onClick={create}>
-            {busy ? progress || "מעבד…" : `צור ${picked.length || ""} טיוטות מהעיצוב`}
+            {busy
+              ? progress || "מעבד…"
+              : picked.length > 1 && mode === "carousel"
+                ? `צור טיוטת קרוסלה (${picked.length} שקפים)`
+                : picked.length > 1
+                  ? `צור ${picked.length} טיוטות`
+                  : "צור טיוטה"}
           </button>
         </div>
       )}
@@ -290,7 +317,7 @@ function Composer({ design, onClose }: { design: CanvaItem; onClose: () => void 
         <div className="mt-4 rounded-xl bg-primary/5 p-3 text-sm">
           {result.ok > 0 && (
             <p>
-              נוצרו {result.ok} טיוטות.{" "}
+              {result.ok === 1 ? "נוצרה טיוטה אחת." : `נוצרו ${result.ok} טיוטות.`}{" "}
               <a href="/admin/drafts" className="font-medium text-secondary underline">
                 לאישור הטיוטות
               </a>
